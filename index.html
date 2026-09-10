@@ -1105,7 +1105,9 @@ function renderAgenda(){
           const event = events[0];
           const showText = slotStart === toMinutes(event.start);
           html += '<div class="slot" data-day="'+day+'" data-time="'+time+'">'+
-            '<div class="event" '+(event.type==="commitment"?'data-edit-commitment="'+event.id+'" style="cursor:pointer;--event:'+event.color+'"':'style="--event:'+event.color+'"')+'>
+            '<div class="event" '+(event.type==="commitment"
+              ? 'data-edit-commitment="'+event.id+'" style="cursor:pointer;--event:'+event.color+'"'
+              : 'style="--event:'+event.color+'"')+'>'+
             (showText
               ? '<b>'+escapeHtml(event.name)+'</b><br>'+event.start+'–'+event.end
               : '&nbsp;')+
