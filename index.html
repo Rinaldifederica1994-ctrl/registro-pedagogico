@@ -55,6 +55,15 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 .modal.show{display:flex}.modal-box{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px}
 .hidden{display:none}
 .note{background:#fff7d9;padding:10px;border-radius:9px;font-size:13px;margin:8px 0}
+.compact-select{width:auto;min-width:118px;padding:6px 8px;border-radius:8px;font-size:12px;font-weight:700}
+.small-btn{padding:6px 9px;border-radius:8px;font-size:12px}
+.money-details{margin-top:12px;overflow:auto}
+.detail-toggle{padding:8px 11px;font-size:13px}
+.trend-wrap{margin-top:12px;padding:14px;background:#f8f9fc;border-radius:12px}
+.trend-chart{width:100%;overflow:auto}
+.trend-chart svg{width:100%;min-width:620px;height:290px;display:block}
+.trend-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.trend-pill{background:#eef1f7;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700}
 @media(max-width:850px){header{padding:14px}.container{padding:12px}.layout{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
 </style>
 </head>
@@ -79,10 +88,9 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 
   <section id="home" class="view active">
     <div class="cards">
-      <div class="card"><b>🟢 Spazi liberi</b><div class="metric" id="freeSlots">0</div><div class="muted">slot da 30 minuti disponibili</div></div>
+      <div class="card"><b>🟢 Spazi disponibili</b><div id="freeSlots" class="free-slots-mini">Calcolo...</div><button id="showAllFree" class="detail-toggle">Vedi tutti ▾</button></div>
       <div class="card"><b>⏱️ Ore previste settimanali</b><div class="metric" id="weekHours">0 h</div><div class="muted">appuntamenti attivi</div></div>
-      <div class="card"><b>📅 Ore previste mensili</b><div class="metric" id="monthHours">0 h</div><div class="muted">calendario reale del mese</div></div>
-      <div class="card"><b>💶 Quanto dovrei guadagnare questo mese</b><div class="metric" id="monthForecast">€0</div><div class="muted">previsione automatica</div></div>
+      <div class="card"><button class="detail-toggle" id="toggleForecast">💶 Compenso ▾</button><div id="forecastHidden" class="hidden"><b>Quanto dovrei guadagnare questo mese</b><div class="metric" id="monthForecast">€0</div><div class="muted">previsione automatica</div></div></div>
     </div>
 
     <div class="layout">
@@ -113,7 +121,7 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
     <div class="panel">
       <div class="section-head">
         <div><h2>📅 Agenda settimanale</h2><div class="muted">Clicca su uno spazio libero per aggiungere un'attività</div></div>
-        <button class="primary" id="addCommitment">➕ Aggiungi impegno</button>
+        <div class="actions"><button id="editAvailability">⏰ I miei orari</button><button class="primary" id="addCommitment">➕ Aggiungi impegno</button></div>
       </div>
       <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
     </div>
@@ -121,12 +129,26 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 
   <section id="money" class="view">
     <div class="cards">
-      <div class="card"><b>📅 Quanto dovrei guadagnare questo mese</b><div class="metric" id="moneyForecast">€0</div><div class="muted">previsione mensile</div></div>
+      <div class="card"><button class="detail-toggle" id="toggleMoneyForecast">💶 Compensi ▾</button><div id="moneyForecastHidden" class="hidden"><b>Quanto dovrei guadagnare questo mese</b><div class="metric" id="moneyForecast">€0</div><div class="muted">previsione mensile</div></div></div>
       <div class="card"><b>💰 Maturato</b><div class="metric" id="earned">€0</div><div class="muted">ore realmente svolte</div></div>
       <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">pagamenti ricevuti</div></div>
       <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">sessioni ancora non pagate</div></div>
     </div>
-    <div class="panel"><h3>👤 Dettaglio per bambino</h3><div id="moneyTable"></div></div>
+    <div class="panel">
+      <div class="section-head">
+        <div><h3>👥 Dettagli bambini</h3><div class="muted">Ore previste, svolte, da recuperare e situazione pagamenti</div></div>
+        <button id="toggleMoneyDetails" class="detail-toggle">▾ Apri dettagli</button>
+      </div>
+      <div id="moneyTable" class="money-details hidden"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="section-head">
+        <div><h3>📈 Andamento per bambino</h3><div class="muted">Ore realmente svolte negli ultimi 6 mesi</div></div>
+        <select id="trendChild" style="width:auto;min-width:180px"></select>
+      </div>
+      <div id="trendChart" class="trend-wrap"></div>
+    </div>
   </section>
 
   <section id="backup" class="view">
@@ -300,6 +322,50 @@ function activeSchedule(child){
   return Array.isArray(child.schedule) ? child.schedule : [];
 }
 
+function getAvailability(){
+  const defaults=[{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"}];
+  if(!Array.isArray(data.availability) || data.availability.length!==6) data.availability=defaults;
+  return data.availability;
+}
+function isWithinAvailability(day,start,end){ const a=getAvailability()[day]; return a && start>=a.start && end<=a.end; }
+function allEvents(day,ignoreChildId){
+  const out=[];
+  data.children.forEach(function(c){ if(c.id===ignoreChildId) return; activeSchedule(c).forEach(function(x){if(Number(x.day)===Number(day)) out.push({name:c.name,start:x.start,end:x.end});}); });
+  data.commitments.forEach(function(x){if(Number(x.day)===Number(day)) out.push({name:x.name,start:x.start,end:x.end});});
+  return out;
+}
+function overlaps(day,start,end,ignoreChildId){
+  const a=toMinutes(start), b=toMinutes(end);
+  return allEvents(day,ignoreChildId).filter(function(e){return a<toMinutes(e.end) && b>toMinutes(e.start);});
+}
+function suggestedSlots(day,durationMinutes,limit){
+  const a=getAvailability()[day]; if(!a) return [];
+  const result=[], step=30;
+  for(let t=toMinutes(a.start); t+durationMinutes<=toMinutes(a.end); t+=step){
+    const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+    const en=addMinutes(st,durationMinutes);
+    if(!overlaps(day,st,en).length) result.push(st+"–"+en);
+    if(result.length>=(limit||3)) break;
+  } return result;
+}
+function renderFreeSlots(){
+  const box=document.getElementById("freeSlots"); if(!box) return;
+  const items=[]; const av=getAvailability();
+  for(let d=0;d<6;d++){
+    const a=av[d]; if(!a) continue;
+    const slots=[]; let open=null;
+    for(let t=toMinutes(a.start);t<toMinutes(a.end);t+=30){
+      const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+      const free=!overlaps(d,st,addMinutes(st,30)).length;
+      if(free && open===null) open=st;
+      if((!free || t+30>=toMinutes(a.end)) && open!==null){ const en=free&&t+30>=toMinutes(a.end)?addMinutes(st,30):st; if(toMinutes(en)-toMinutes(open)>=30) slots.push(open+"–"+en); open=null; }
+    }
+    if(slots.length) items.push('<div><b>'+DAYS[d]+'</b> '+slots.slice(0,2).join(' · ')+'</div>');
+  }
+  box.innerHTML=items.length?items.slice(0,3).join(''):'Nessuno spazio libero';
+  const btn=document.getElementById('showAllFree'); if(btn) btn.onclick=function(){ showModal('<h2>🟢 Tutti gli spazi disponibili</h2>'+items.join('')+'<div class="actions"><button id="closeFree">Chiudi</button></div>'); document.getElementById('closeFree').onclick=closeModal; };
+}
+
 function weekHours(){
   return data.children.reduce(function(total,child){
     return total + activeSchedule(child).reduce(function(sum,item){
@@ -423,7 +489,7 @@ function renderChildLists(){
   const html = data.children.length ? data.children.map(function(child){
     return '<div class="child-item '+(selectedChildId===child.id?"selected":"")+'" style="--child:'+child.color+'" data-child="'+child.id+'">'+
       '<span><b>'+escapeHtml(child.name)+'</b><br><small class="muted">'+(child.fixed===false?"Non fisso":"Fisso")+'</small></span>'+
-      '<span>'+euro(child.rate)+'/h</span></div>';
+      '</div>';
   }).join("") : '<div class="empty">Ancora nessun bambino.</div>';
 
   document.getElementById("childrenList").innerHTML = html;
@@ -439,7 +505,6 @@ function renderChildLists(){
 
 function renderDashboard(){
   document.getElementById("weekHours").textContent = formatHours(weekHours());
-  document.getElementById("monthHours").textContent = formatHours(monthHours());
   document.getElementById("monthForecast").textContent = euro(monthlyForecast());
 
   let occupied = 0;
@@ -470,14 +535,27 @@ function renderDashboard(){
     html += '<tr><td>'+escapeHtml(child ? child.name : "Eliminato")+'</td>'+
       '<td>'+escapeHtml(session.date)+'</td>'+
       '<td>'+formatHours(durationHours(session.start,session.end))+'</td>'+
-      '<td>'+(session.paid
-        ? '<span class="badge paid">Pagato</span>'
-        : '<button class="green mark-paid" data-session="'+session.id+'">🟢 Segna pagato</button>')+
-      '</td></tr>';
+      '<td><select class="compact-select payment-select" data-session="'+session.id+'">'+
+        '<option value="false" '+(!session.paid?'selected':'')+'>🔴 Non pagato</option>'+
+        '<option value="true" '+(session.paid?'selected':'')+'>🟢 Pagato</option>'+
+      '</select></td></tr>';
   });
   html += '</table>';
   document.getElementById("recentSessions").innerHTML = html;
-  bindMarkPaidButtons();
+  bindPaymentSelects();
+}
+
+function bindPaymentSelects(){
+  document.querySelectorAll(".payment-select").forEach(function(select){
+    select.addEventListener("change",function(){
+      const session = data.sessions.find(function(s){ return s.id===select.dataset.session; });
+      if(!session) return;
+      session.paid = select.value==="true";
+      if(session.paid) session.paidDate = new Date().toISOString().slice(0,10);
+      else delete session.paidDate;
+      renderAll();
+    });
+  });
 }
 
 function bindMarkPaidButtons(){
@@ -495,18 +573,20 @@ function renderMoney(){
     const money = childMoney(child.id);
     const plannedHours = childMonthHours(child);
     const actualHours = childActualMonthHours(child.id);
+    const remainingHours = Math.max(0, plannedHours-actualHours);
 
     totals.earned += money.earned;
     totals.received += money.received;
     totals.due += money.due;
 
-    return '<tr>'+ 
-      '<td>'+escapeHtml(child.name)+'</td>'+ 
-      '<td>'+formatHours(plannedHours)+'</td>'+ 
-      '<td>'+formatHours(actualHours)+'</td>'+ 
-      '<td>'+euro(money.earned)+'</td>'+ 
-      '<td>'+euro(money.received)+'</td>'+ 
-      '<td>'+euro(money.due)+'</td>'+ 
+    return '<tr>'+
+      '<td><b>'+escapeHtml(child.name)+'</b></td>'+
+      '<td>'+formatHours(plannedHours)+'</td>'+
+      '<td>'+formatHours(actualHours)+'</td>'+
+      '<td>'+formatHours(remainingHours)+'</td>'+
+      '<td>'+euro(money.earned)+'</td>'+
+      '<td>'+euro(money.received)+'</td>'+
+      '<td>'+euro(money.due)+'</td>'+
     '</tr>';
   }).join("");
 
@@ -516,10 +596,106 @@ function renderMoney(){
   document.getElementById("due").textContent = euro(totals.due);
 
   document.getElementById("moneyTable").innerHTML = rows
-    ? '<table><tr><th>Bambino</th><th>Ore previste mese</th><th>Ore effettive mese</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>'+rows+'</table>'
+    ? '<table><tr><th>Bambino</th><th>Ore previste</th><th>Ore svolte</th><th>Ore da fare</th><th>Maturato</th><th>Incassato</th><th>Da pagare</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
+
+  const toggle = document.getElementById("toggleMoneyDetails");
+  if(toggle){
+    toggle.addEventListener("click",function(){
+      const table = document.getElementById("moneyTable");
+      const isHidden = table.classList.toggle("hidden");
+      toggle.textContent = isHidden ? "▾ Apri dettagli" : "▴ Chiudi dettagli";
+    });
+  }
+
+  renderTrendSection();
 }
 
+function monthKey(date){
+  return String(date || "").slice(0,7);
+}
+
+function monthLabel(date){
+  return new Intl.DateTimeFormat("it-IT",{month:"short"}).format(date).replace(".","");
+}
+
+function lastMonths(count){
+  const months = [];
+  const now = new Date();
+  for(let i=count-1;i>=0;i--){
+    months.push(new Date(now.getFullYear(),now.getMonth()-i,1));
+  }
+  return months;
+}
+
+function renderTrendSection(){
+  const select = document.getElementById("trendChild");
+  const chart = document.getElementById("trendChart");
+  if(!select || !chart) return;
+
+  const previous = select.value;
+  select.innerHTML = data.children.length
+    ? data.children.map(function(child){
+        return '<option value="'+escapeHtml(child.id)+'">'+escapeHtml(child.name)+'</option>';
+      }).join("")
+    : '<option value="">Nessun bambino</option>';
+
+  if(previous && data.children.some(function(c){return c.id===previous;})) select.value = previous;
+  else if(selectedChildId && data.children.some(function(c){return c.id===selectedChildId;})) select.value = selectedChildId;
+
+  function draw(){
+    const childId = select.value;
+    const child = childById(childId);
+    if(!child){
+      chart.innerHTML = '<div class="empty">Inserisci un bambino per vedere l’andamento.</div>';
+      return;
+    }
+
+    const months = lastMonths(6);
+    const values = months.map(function(date){
+      const key = date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0");
+      return data.sessions
+        .filter(function(session){ return session.childId===child.id && monthKey(session.date)===key; })
+        .reduce(function(total,session){ return total+durationHours(session.start,session.end); },0);
+    });
+
+    const sessionCount = data.sessions.filter(function(session){ return session.childId===child.id; }).length;
+    const max = Math.max(1,...values);
+    const W=700,H=260,padL=55,padR=25,padT=30,padB=48;
+    const chartW=W-padL-padR, chartH=H-padT-padB;
+    const step=chartW/values.length, barW=Math.min(60,step*0.58);
+
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Andamento ore">';
+    for(let i=0;i<=4;i++){
+      const y=padT+chartH-(chartH*i/4);
+      const value=(max*i/4).toFixed(max<5?1:0);
+      svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#dde4ef"/>';
+      svg+='<text x="'+(padL-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" fill="#71809a">'+value+'h</text>';
+    }
+    values.forEach(function(value,index){
+      const h=(value/max)*chartH;
+      const x=padL+step*index+(step-barW)/2;
+      const y=padT+chartH-h;
+      const label=monthLabel(months[index]);
+      svg+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="8" fill="'+child.color+'"><title>'+label+': '+formatHours(value)+'</title></rect>';
+      svg+='<text x="'+(x+barW/2)+'" y="'+(H-18)+'" text-anchor="middle" font-size="12" fill="#71809a">'+label+'</text>';
+      if(value>0) svg+='<text x="'+(x+barW/2)+'" y="'+Math.max(18,y-7)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#263858">'+(Number.isInteger(value)?value:value.toFixed(1))+'h</text>';
+    });
+    svg+='</svg>';
+
+    const totalHours = values.reduce(function(a,b){return a+b;},0);
+    chart.innerHTML =
+      '<div class="trend-summary">'+
+        '<span class="trend-pill">👤 '+escapeHtml(child.name)+'</span>'+
+        '<span class="trend-pill">⏱️ '+formatHours(totalHours)+' negli ultimi 6 mesi</span>'+
+        '<span class="trend-pill">📚 '+sessionCount+' sessioni totali</span>'+
+      '</div>'+
+      '<div class="trend-chart">'+svg+'</div>';
+  }
+
+  select.onchange = draw;
+  draw();
+}
 function optionList(values){
   return values.map(function(value){
     return '<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>';
@@ -545,11 +721,11 @@ function openChildForm(child){
     '<h2>'+(child?"✏️ Modifica bambino":"➕ Inserisci bambino")+'</h2>'+
     '<label>Nome del bambino</label><input id="childName" value="'+escapeHtml(c.name||"")+'">'+
     '<div class="row2">'+
-      '<div><label>Compenso orario (€)</label><input id="childRate" type="number" step="0.01" value="'+(c.rate||"")+'"></div>'+
+      '<div><details><summary><b>💶 Compenso</b></summary><label>Compenso orario (€)</label><input id="childRate" type="number" step="0.01" value="'+(c.rate||"")+'"></details></div>'+
       '<div><label>È fisso ogni settimana?</label><select id="childFixed"><option value="true" '+(c.fixed!==false?"selected":"")+'>Sì</option><option value="false" '+(c.fixed===false?"selected":"")+'>No</option></select></div>'+
     '</div>'+
     '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
-    '<h3>📅 Giorni e orari</h3><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno/orario</button>'+
+    '<h3>📅 Giorni, ora e durata</h3><div class="muted">Inserisci l’ora di inizio e la durata: l’ora di fine viene calcolata automaticamente.</div><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno</button>'+
     '<details><summary><b>Informazioni facoltative</b></summary>'+
       '<label>Età</label><input id="childAge" value="'+escapeHtml(c.age||"")+'">'+
       '<label>Classe</label><input id="childClass" value="'+escapeHtml(c.class||"")+'">'+
@@ -576,17 +752,13 @@ function openChildForm(child){
 function addScheduleRow(item){
   const row = document.createElement("div");
   row.className = "row3 schedule-row";
-  row.innerHTML =
-    '<select class="schedule-day">'+DAYS.map(function(day,index){
-      return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';
-    }).join("")+'</select>'+
-    '<input class="schedule-start" type="time" value="'+item.start+'">'+
-    '<div style="display:flex;gap:5px"><input class="schedule-end" type="time" value="'+item.end+'"><button class="remove-schedule">×</button></div>';
-
+  const mins=Math.max(30,Math.round(durationHours(item.start,item.end)*60));
+  row.innerHTML = '<select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select>'+ '<input class="schedule-start" type="time" value="'+item.start+'">'+ '<div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button class="remove-schedule">×</button></div>'+ '<div class="muted schedule-end-preview" style="grid-column:2/4">Fine: '+item.end+'</div>';
   document.getElementById("scheduleRows").appendChild(row);
-  row.querySelector(".remove-schedule").addEventListener("click",function(){
-    row.remove();
-  });
+  const dur=row.querySelector('.schedule-duration'); dur.value=String([30,60,90,120,150,180].includes(mins)?mins:60);
+  function update(){ row.querySelector('.schedule-end-preview').textContent='Fine: '+addMinutes(row.querySelector('.schedule-start').value,Number(dur.value)); }
+  row.querySelector('.schedule-start').addEventListener('change',update); dur.addEventListener('change',update); update();
+  row.querySelector(".remove-schedule").addEventListener("click",function(){ row.remove(); });
 }
 
 function saveChild(existingId){
@@ -597,14 +769,23 @@ function saveChild(existingId){
   }
 
   const schedule = Array.from(document.querySelectorAll(".schedule-row")).map(function(row){
-    return {
-      day:Number(row.querySelector(".schedule-day").value),
-      start:row.querySelector(".schedule-start").value,
-      end:row.querySelector(".schedule-end").value
-    };
-  }).filter(function(item){
-    return item.start && item.end && item.start<item.end;
-  });
+    const start=row.querySelector(".schedule-start").value;
+    const duration=Number(row.querySelector(".schedule-duration").value)||60;
+    return {day:Number(row.querySelector(".schedule-day").value),start:start,end:addMinutes(start,duration)};
+  }).filter(function(item){ return item.start && item.end && item.start<item.end; });
+
+  for(const item of schedule){
+    if(!isWithinAvailability(item.day,item.start,item.end)){
+      alert("⚠️ "+DAYS[item.day]+": l'orario "+item.start+"–"+item.end+" è fuori dai tuoi orari disponibili."); return;
+    }
+    const conflict=overlaps(item.day,item.start,item.end,existingId);
+    if(conflict.length){
+      const alternatives=suggestedSlots(item.day,toMinutes(item.end)-toMinutes(item.start),3);
+      alert("⚠️ Sovrapposizione con: "+conflict.map(function(x){return x.name+" ("+x.start+"–"+x.end+")";}).join(", ")+".
+
+Slot alternativi: "+(alternatives.join(" · ")||"nessuno")); return;
+    }
+  }
 
   const old = existingId ? childById(existingId) : null;
   const child = {
@@ -650,9 +831,6 @@ function renderChildDetail(){
       '<div><button id="editChild">✏️ Modifica</button> <button class="danger" id="deleteChild">🗑️ Elimina</button></div>'+
     '</div>'+
     '<div class="cards">'+
-      '<div class="card"><b>⏱️ Ore previste settimanali</b><div class="metric">'+formatHours(childWeekHours(child))+'</div><div class="muted">settimana attiva</div></div>'+
-      '<div class="card"><b>📅 Ore previste mensili</b><div class="metric">'+formatHours(childMonthHours(child))+'</div><div class="muted">mese corrente</div></div>'+
-      '<div class="card"><b>✅ Ore effettive del mese</b><div class="metric">'+formatHours(childActualMonthHours(child.id))+'</div><div class="muted">sessioni realmente svolte</div></div>'+
       '<div class="card"><b>💰 Maturato</b><div class="metric">'+euro(money.earned)+'</div></div>'+
       '<div class="card"><b>🟢 Incassato</b><div class="metric">'+euro(money.received)+'</div></div>'+
       '<div class="card"><b>🔴 Mi deve</b><div class="metric">'+euro(money.due)+'</div></div>'+
@@ -664,7 +842,8 @@ function renderChildDetail(){
   document.getElementById("editChild").addEventListener("click",function(){ openChildForm(child); });
   document.getElementById("deleteChild").addEventListener("click",function(){ deleteChild(child.id); });
   document.getElementById("saveSession").addEventListener("click",saveSession);
-  bindMarkPaidButtons();
+  bindPaymentSelects();
+  bindDownloadSessionButtons();
   bindDeleteSessionButtons();
 }
 
@@ -702,17 +881,57 @@ function sessionHistoryHtml(sessions){
       '<td>'+escapeHtml(s.date)+'</td>'+
       '<td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td>'+
       '<td>'+escapeHtml(s.subject)+'<br><small>'+escapeHtml(s.workType)+'</small></td>'+
-      '<td>'+(s.paid
-        ? '<span class="badge paid">🟢 Pagato</span>'
-        : '<span class="badge unpaid">🔴 Non pagato</span>')+'</td>'+
-      '<td>'+(s.paid ? '' : '<button class="green mark-paid" data-session="'+s.id+'">🟢 Segna pagato</button> ') +
-      '<button class="danger delete-session" data-session="'+s.id+'">🗑️</button></td>'+
+      '<td><select class="compact-select payment-select" data-session="'+s.id+'">'+
+        '<option value="false" '+(!s.paid?'selected':'')+'>🔴 Non pagato</option>'+
+        '<option value="true" '+(s.paid?'selected':'')+'>🟢 Pagato</option>'+
+      '</select></td>'+
+      '<td><button class="small-btn download-session" data-session="'+s.id+'">⬇️ Scarica</button> '+
+      '<button class="danger small-btn delete-session" data-session="'+s.id+'">🗑️</button></td>'+
     '</tr>';
   });
 
   return html+'</table>';
 }
 
+function downloadSession(sessionId){
+  const session = data.sessions.find(function(s){ return s.id===sessionId; });
+  if(!session) return;
+  const child = childById(session.childId);
+  const safeName = String((child && child.name) || "bambino").replace(/[^a-z0-9_-]+/gi,"_");
+  const title = "Sessione - "+((child && child.name) || "Bambino")+" - "+session.date;
+
+  const html =
+    '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>'+escapeHtml(title)+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:10px}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin:14px 0}dt{font-weight:bold;margin-top:10px}dd{margin:3px 0 10px}</style>'+
+    '</head><body><h1>'+escapeHtml(title)+'</h1>'+
+    '<div class="box"><dl>'+
+    '<dt>Orario</dt><dd>'+escapeHtml(session.start)+'–'+escapeHtml(session.end)+'</dd>'+
+    '<dt>Stato d’animo</dt><dd>'+escapeHtml(session.mood)+'</dd>'+
+    '<dt>Lavoro di oggi</dt><dd>'+escapeHtml(session.subject)+' · '+escapeHtml(session.workType)+'</dd>'+
+    '<dt>Attenzione</dt><dd>'+escapeHtml(session.attention)+'</dd>'+
+    '<dt>Collaborazione</dt><dd>'+escapeHtml(session.collaboration)+'</dd>'+
+    '<dt>Prossima volta</dt><dd>'+escapeHtml(session.next || "—")+'</dd>'+
+    '<dt>Pagamento</dt><dd>'+ (session.paid ? "Pagato" : "Non pagato") +'</dd>'+
+    '</dl></div></body></html>';
+
+  const blob = new Blob([html],{type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "sessione_"+safeName+"_"+session.date+".html";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+}
+
+function bindDownloadSessionButtons(){
+  document.querySelectorAll(".download-session").forEach(function(button){
+    button.addEventListener("click",function(){
+      downloadSession(button.dataset.session);
+    });
+  });
+}
 function saveSession(){
   const start = document.getElementById("sessionStart").value;
   const end = document.getElementById("sessionEnd").value;
@@ -783,7 +1002,10 @@ function renderAgenda(){
     return '<div class="a-head">'+day+'</div>';
   }).join("");
 
-  for(let hour=8;hour<21;hour++){
+  const av=getAvailability();
+  const minHour=Math.floor(Math.min.apply(null,av.map(function(x){return toMinutes(x.start);}))/60);
+  const maxHour=Math.ceil(Math.max.apply(null,av.map(function(x){return toMinutes(x.end);}))/60);
+  for(let hour=minHour;hour<maxHour;hour++){
     for(let half=0;half<2;half++){
       const time = String(hour).padStart(2,"0")+":"+(half===0?"00":"30");
       const slotStart = toMinutes(time);
@@ -792,6 +1014,8 @@ function renderAgenda(){
       html += '<div class="time">'+(half===0?time:"")+'</div>';
 
       for(let day=0;day<6;day++){
+        const available=isWithinAvailability(day,time,addMinutes(time,30));
+        if(!available){ html += '<div class="slot" style="background:#f3f3f3;opacity:.45"></div>'; continue; }
         const events = [];
 
         data.children.forEach(function(child){
@@ -884,10 +1108,13 @@ function openCommitmentForm(day,start){
     const startValue = document.getElementById("commitmentStart").value;
     const endValue = document.getElementById("commitmentEnd").value;
 
-    if(!startValue || !endValue || startValue>=endValue){
-      alert("Controlla gli orari.");
-      return;
-    }
+    if(!startValue || !endValue || startValue>=endValue){ alert("Controlla gli orari."); return; }
+    const dayValue=Number(document.getElementById("commitmentDay").value);
+    if(!isWithinAvailability(dayValue,startValue,endValue)){ alert("⚠️ Questo orario è fuori dalla tua disponibilità impostata."); return; }
+    const conflict=overlaps(dayValue,startValue,endValue);
+    if(conflict.length){ const alt=suggestedSlots(dayValue,toMinutes(endValue)-toMinutes(startValue),3); alert("⚠️ Si sovrappone a "+conflict.map(function(x){return x.name+" "+x.start+"–"+x.end;}).join(", ")+".
+
+Slot alternativi: "+(alt.join(" · ")||"nessuno")); return; }
 
     data.commitments.push({
       id:uid(),
@@ -904,6 +1131,12 @@ function openCommitmentForm(day,start){
   });
 }
 
+function openAvailabilityForm(){
+  const av=getAvailability();
+  showModal('<h2>⏰ I miei orari di lavoro</h2><p class="muted">Imposta gli orari in cui vuoi che l’agenda cerchi gli slot liberi.</p>'+DAYS.map(function(d,i){return '<div class="row3"><b>'+d+'</b><input class="av-start" data-day="'+i+'" type="time" value="'+av[i].start+'"><input class="av-end" data-day="'+i+'" type="time" value="'+av[i].end+'"></div>';}).join('')+'<div class="actions"><button class="primary" id="saveAvailability">💾 Salva orari</button><button id="cancelAvailability">Annulla</button></div>');
+  document.getElementById('cancelAvailability').onclick=closeModal;
+  document.getElementById('saveAvailability').onclick=function(){ data.availability=DAYS.map(function(_,i){return {start:document.querySelector('.av-start[data-day="'+i+'"]').value,end:document.querySelector('.av-end[data-day="'+i+'"]').value};}); closeModal(); renderAll(); };
+}
 function exportBackup(){
   const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -966,12 +1199,24 @@ function printSelectedReport(){
   report.document.close();
 }
 
+document.addEventListener("click",function(event){
+  if(event.target && event.target.id==="toggleForecast"){
+    const box=document.getElementById("forecastHidden"); if(box) box.classList.toggle("hidden");
+    event.target.textContent=box && box.classList.contains("hidden")?"💶 Compenso ▾":"💶 Compenso ▴";
+  }
+  if(event.target && event.target.id==="toggleMoneyForecast"){
+    const box=document.getElementById("moneyForecastHidden"); if(box) box.classList.toggle("hidden");
+    event.target.textContent=box && box.classList.contains("hidden")?"💶 Compensi ▾":"💶 Compensi ▴";
+  }
+});
+
 function renderAll(){
   saveData();
   renderDashboard();
   renderChildLists();
   renderChildDetail();
   renderAgenda();
+  renderFreeSlots();
   renderMoney();
 }
 
