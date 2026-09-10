@@ -6,654 +6,1221 @@
 <title>Registro Pedagogico</title>
 <style>
 :root{
-  --primary:#6254a8; --primary-dark:#4f438f; --primary-soft:#eeebff;
-  --ink:#263858; --muted:#71809a; --bg:#f5f7fb; --card:#fff; --line:#dce4ef;
-  --green:#2f9e6f; --red:#d85b66; --orange:#e99a2e; --blue:#5b9bd5;
+  --primary:#6254a8; --primary2:#ece9ff; --ink:#263858; --muted:#71809a;
+  --bg:#f4f6fb; --card:#ffffff; --line:#dde4ef; --green:#2f9e6f;
+  --red:#d85b66; --orange:#e99a2e;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
-button,input,select,textarea{font:inherit}
-button{border:0;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer;background:#e9eef5;color:var(--ink)}
-button:hover{filter:brightness(.97)}
-button.primary{background:var(--primary);color:#fff}.primary:hover{background:var(--primary-dark)}
-button.green{background:var(--green);color:#fff}.danger{background:#fde7e9;color:#a93642}
-button.ghost{background:#fff;border:1px solid var(--line)}
-header{background:#fff;border-bottom:1px solid var(--line);padding:15px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px}
-.brand{font-size:23px;font-weight:800;color:var(--primary)}.subtitle,.muted{color:var(--muted);font-size:13px}
-.sync{font-size:12px;padding:7px 10px;border-radius:999px;background:#edf8f1;color:#26764f}
-.sync.offline{background:#fff3dc;color:#a66b11}
-.container{max-width:1450px;margin:auto;padding:18px}
-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab.active{background:var(--primary);color:#fff}
+body{display:none;margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1,h2,h3,p{margin-top:0}.brand{font-size:24px;font-weight:800;color:var(--primary)}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
+.container{max-width:1500px;margin:auto;padding:18px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:#eaf0f7;color:var(--ink)}
+button:hover{filter:brightness(.98)}
+button.primary{background:var(--primary);color:#fff}
+button.green{background:var(--green);color:#fff}
+button.danger{background:#fde6e8;color:#aa3642}
+.tab.active{background:var(--primary);color:#fff}
 .view{display:none}.view.active{display:block}
-.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:17px;box-shadow:0 5px 18px rgba(35,52,84,.04)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}.home-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}
-h1,h2,h3,p{margin-top:0}.metric{font-size:27px;font-weight:800;margin:8px 0}
-.child-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;margin:7px 0;border-radius:12px;background:#fafbfe;border-left:8px solid var(--child);cursor:pointer}
-.child-item.selected{outline:2px solid var(--primary)}.child-meta{font-size:12px;color:var(--muted);margin-top:3px}
-.color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:7px}
-.empty{padding:28px;text-align:center;color:var(--muted)}
-.appointment{padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fff}
-.appointment b{display:block}.appointment small{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 5px 20px rgba(35,52,84,.05)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px}
+.metric{font-size:27px;font-weight:800;margin:8px 0}.muted{color:var(--muted);font-size:13px}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.child-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px;margin:6px 0;border-radius:10px;background:#f8f9fc;border-left:8px solid var(--child);cursor:pointer}
+.child-item.selected{outline:2px solid var(--primary)}
 label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
-input,select,textarea{width:100%;padding:10px;border:1px solid #ccd6e4;border-radius:10px;color:var(--ink);background:#fff}
-textarea{min-height:85px;resize:vertical}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+input,select,textarea{width:100%;border:1px solid #ccd6e4;border-radius:9px;padding:10px;background:#fff;color:var(--ink)}
+textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.hidden{display:none!important}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800}
 .badge.paid{background:#dff4e8;color:#24744f}.badge.unpaid{background:#fde4e5;color:#b23c46}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-.table-wrap{overflow:auto}
-.agenda-wrap{overflow:auto}.agenda{display:grid;grid-template-columns:62px repeat(6,1fr);min-width:980px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.a-head{padding:10px;text-align:center;font-weight:800;background:#eef1f7;border-right:1px solid var(--line)}
-.time{padding:7px;font-size:12px;background:#fafbfe;border-top:1px solid var(--line)}
-.slot{min-height:40px;border-left:1px solid var(--line);border-top:1px solid var(--line);position:relative;cursor:pointer}
-.slot.free{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#f3faf6 9px,#f3faf6 18px)}
-.event{position:absolute;inset:2px;border-radius:7px;padding:4px 6px;font-size:11px;border-left:6px solid var(--event);background:color-mix(in srgb,var(--event) 17%,white);overflow:hidden}
-.modal{position:fixed;inset:0;background:rgba(26,38,62,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
-.modal.show{display:flex}.modal-box{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:20px}
-.note{background:#fff7da;padding:11px;border-radius:10px;font-size:13px}
-.location{font-size:12px;color:var(--muted)}.today-title{font-size:18px;font-weight:800}
-@media(max-width:900px){header{padding:14px}.container{padding:12px}.layout,.home-grid{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
+.empty{text-align:center;color:var(--muted);padding:25px}
+details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
+.agenda-wrap{overflow:auto}
+.agenda{display:grid;grid-template-columns:64px repeat(6,1fr);min-width:940px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.a-head{background:#eef1f7;font-weight:800;text-align:center;padding:10px;border-right:1px solid var(--line)}
+.time{background:#fafbfe;padding:7px;border-top:1px solid var(--line);font-size:12px}
+.slot{height:38px;border-left:1px solid var(--line);border-top:1px solid var(--line);position:relative;cursor:pointer}
+.slot.free{background:repeating-linear-gradient(135deg,#fff,#fff 8px,#f2faf5 8px,#f2faf5 16px)}
+.event{position:absolute;inset:2px;border-radius:6px;padding:4px 6px;font-size:11px;border-left:6px solid var(--event);background:color-mix(in srgb,var(--event) 16%,white);overflow:hidden}
+.modal{position:fixed;inset:0;background:rgba(25,36,60,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal.show{display:flex}.modal-box{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px}
+.hidden{display:none}
+.note{background:#fff7d9;padding:10px;border-radius:9px;font-size:13px;margin:8px 0}
+.compact-select{width:auto;min-width:118px;padding:6px 8px;border-radius:8px;font-size:12px;font-weight:700}
+.small-btn{padding:6px 9px;border-radius:8px;font-size:12px}
+.money-details{margin-top:12px;overflow:auto}
+.detail-toggle{padding:8px 11px;font-size:13px}
+.trend-wrap{margin-top:12px;padding:14px;background:#f8f9fc;border-radius:12px}
+.trend-chart{width:100%;overflow:auto}
+.trend-chart svg{width:100%;min-width:620px;height:290px;display:block}
+.trend-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.trend-pill{background:#eef1f7;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700}
+@media(max-width:850px){header{padding:14px}.container{padding:12px}.layout{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
 </style>
 </head>
-<body>
+<body style="display:none;">
+
 <header>
-  <div><div class="brand">🦋 Registro Pedagogico</div><div class="subtitle">Organizzazione, sessioni e agenda in un unico archivio</div></div>
-  <div><div id="currentDate" class="muted"></div><div id="syncStatus" class="sync offline">● Archivio locale</div></div>
+  <div>
+    <div class="brand">🦋 Registro Pedagogico</div>
+    <div class="subtitle">Organizzazione, sessioni e agenda in un unico archivio</div>
+  </div>
+  <div id="currentMonth" class="muted"></div>
 </header>
 
 <div class="container">
-<nav>
-  <button class="tab active" data-view="home">🏠 Home</button>
-  <button class="tab" data-view="children">👧 Bambini</button>
-  <button class="tab" data-view="agenda">📅 Agenda</button>
-  <button class="tab" data-view="money">💶 Compensi</button>
-  <button class="tab" data-view="backup">💾 Archivio</button>
-</nav>
+  <nav>
+    <button class="tab active" data-view="home">🏠 Home</button>
+    <button class="tab" data-view="children">👧 Bambini</button>
+    <button class="tab" data-view="agenda">📅 Agenda</button>
+    <button class="tab" data-view="money">💶 Compensi</button>
+    <button class="tab" data-view="backup">💾 Backup</button>
+  </nav>
 
-<section id="home" class="view active">
-  <div class="home-grid">
-    <div class="panel">
-      <div class="section-head"><div><div class="today-title">📅 Appuntamenti di oggi</div><div class="muted" id="todayLabel"></div></div><button class="primary" id="homeAddAppointment">➕ Aggiungi</button></div>
-      <div id="todayAppointments"></div>
+  <section id="home" class="view active">
+    <div class="cards">
+      <div class="card"><b>🟢 Spazi disponibili</b><div id="freeSlots" class="free-slots-mini">Calcolo...</div><button id="showAllFree" class="detail-toggle">Vedi tutti ▾</button></div>
+      <div class="card"><b>⏱️ Ore previste settimanali</b><div class="metric" id="weekHours">0 h</div><div class="muted">appuntamenti attivi</div></div>
+      <div class="card"><button class="detail-toggle" id="toggleForecast">💶 Compenso ▾</button><div id="forecastHidden" class="hidden"><b>Quanto dovrei guadagnare questo mese</b><div class="metric" id="monthForecast">€0</div><div class="muted">previsione automatica</div></div></div>
     </div>
-    <div class="panel">
-      <div class="section-head"><h3>🟢 Prossimi spazi liberi</h3><button id="showAgenda">Vedi agenda</button></div>
-      <div id="freeSpaces"></div>
-    </div>
-  </div>
-  <div class="home-grid" style="margin-top:16px">
-    <div class="panel">
-      <div class="section-head"><h3>📌 Prossimi appuntamenti</h3></div>
-      <div id="upcomingAppointments"></div>
-    </div>
-    <div class="panel">
-      <div class="section-head"><h3>👧 I miei bambini</h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
-      <div id="homeChildren"></div>
-    </div>
-  </div>
-</section>
 
-<section id="children" class="view">
-  <div class="layout">
-    <div class="panel"><div class="section-head"><h3>Bambini</h3><button class="primary" id="addChild">➕ Inserisci</button></div><div id="childrenList"></div></div>
-    <div class="panel" id="childDetail"><div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div></div>
-  </div>
-</section>
-
-<section id="agenda" class="view">
-  <div class="panel">
-    <div class="section-head"><div><h2>📅 Agenda settimanale</h2><div class="muted">Dal lunedì al sabato · clicca su uno spazio per aggiungere un'attività</div></div><div class="actions"><button id="editAvailability">⏰ I miei orari</button><button class="primary" id="addAgenda">➕ Aggiungi</button></div></div>
-    <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
-  </div>
-</section>
-
-<section id="money" class="view">
-  <div class="cards">
-    <div class="card"><b>⏱️ Ore previste questa settimana</b><div class="metric" id="weekPlanned">0 h</div><div class="muted">tutti i bambini attivi</div></div>
-    <div class="card"><b>✅ Ore effettive questa settimana</b><div class="metric" id="weekActual">0 h</div><div class="muted">sessioni realmente svolte</div></div>
-    <div class="card"><b>💶 Compenso mensile totale</b><div class="metric" id="monthlyTotal">€0,00</div><div class="muted">mese in corso</div></div>
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <b>🔮 Potenziale a pieno regime</b>
-        <button class="ghost" id="togglePotential" style="padding:4px 8px; font-size:11px;" title="Mostra/Nascondi">👁️</button>
+    <div class="layout">
+      <div class="panel">
+        <div class="section-head"><h3>I miei bambini</h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
+        <div id="homeChildren"></div>
       </div>
-      <div class="metric" id="monthlyPotential">€0,00</div>
-      <div class="muted">se tutti fanno le ore fisse</div>
+      <div class="panel">
+        <h3>Ultime sessioni</h3>
+        <div id="recentSessions"></div>
+      </div>
     </div>
-    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">mese in corso</div></div>
-    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">mese in corso</div></div>
-  </div>
-  <div class="panel" style="margin-top:16px"><h3>Dettaglio per bambino</h3><div class="table-wrap" id="moneyTable"></div></div>
-</section>
+  </section>
 
-<section id="backup" class="view">
-  <div class="panel">
-    <h2>💾 Archivio e sicurezza</h2>
-    <div class="note">I dati vengono salvati automaticamente. Se Firebase è disponibile vengono sincronizzati anche nell'archivio online.</div>
-    <div class="actions"><button class="primary" id="exportBackup">📥 Crea backup</button><button id="importButton">📤 Ripristina backup</button><button class="danger" id="clearLocal">🗑️ Cancella solo archivio locale</button><input class="hidden" type="file" id="importFile" accept=".json"></div>
-  </div>
-</section>
+  <section id="children" class="view">
+    <div class="layout">
+      <div class="panel">
+        <div class="section-head"><h3>Bambini</h3><button class="primary" id="addChild">➕ Inserisci</button></div>
+        <div id="childrenList"></div>
+      </div>
+      <div class="panel" id="childDetail">
+        <div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agenda" class="view">
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>📅 Agenda settimanale</h2><div class="muted">Clicca su uno spazio libero per aggiungere un'attività</div></div>
+        <div class="actions"><button id="editAvailability">⏰ I miei orari</button><button class="primary" id="addCommitment">➕ Aggiungi impegno</button></div>
+      </div>
+      <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
+    </div>
+  </section>
+
+  <section id="money" class="view">
+    <div class="cards">
+      <div class="card"><b>💶 Compenso mensile totale</b><div class="metric" id="monthlyTotal">€0</div><div class="muted">mese in corso</div></div>
+      <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">mese in corso</div></div>
+      <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">mese in corso</div></div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="section-head"><div><h3>👥 Dettaglio per bambino</h3><div class="muted">Le ore da pagare si aggiornano automaticamente quando metti una sessione come pagata.</div></div></div>
+      <div id="moneyTable" class="money-details"></div>
+    </div>
+  </section>
+
+  <section id="backup" class="view">
+    <div class="panel">
+      <h2>💾 Backup e sicurezza</h2>
+      <div class="note">Il programma salva automaticamente i dati sul dispositivo. Fai periodicamente un backup.</div>
+      <div class="actions">
+        <button class="primary" id="exportBackup">📥 Crea backup</button>
+        <button id="importButton">📤 Ripristina backup</button>
+        <input class="hidden" type="file" id="importFile" accept=".json">
+      </div>
+      <hr>
+      <h3>📄 Report PDF</h3>
+      <p class="muted">Seleziona un bambino, poi genera un report stampabile. Dal menu di stampa puoi scegliere “Salva come PDF”.</p>
+      <button id="printReport">📄 Genera report</button>
+    </div>
+  </section>
 </div>
 
 <div class="modal" id="modal"><div class="modal-box" id="modalContent"></div></div>
 
-<script type="module">
+<script>
 "use strict";
 
+// ===== FIREBASE: ARCHIVIO UNICO SU TUTTI I DISPOSITIVI =====
 const firebaseConfig = {
-  apiKey:"AIzaSyDbntlazrKuldgAARLVP8D9pvjwbodSDRs",
-  authDomain:"registro-pedagogico-8e0a3.firebaseapp.com",
-  projectId:"registro-pedagogico-8e0a3",
-  storageBucket:"registro-pedagogico-8e0a3.firebasestorage.app",
-  messagingSenderId:"1029202221106",
-  appId:"1:1029202221106:web:3a6a50410d322d9a2d042b"
+  apiKey: "AIzaSyDbntlazrKuldgAARLVP8D9pvjwbodSDRs",
+  authDomain: "registro-pedagogico-8e0a3.firebaseapp.com",
+  projectId: "registro-pedagogico-8e0a3",
+  storageBucket: "registro-pedagogico-8e0a3.firebasestorage.app",
+  messagingSenderId: "1029202221106",
+  appId: "1:1029202221106:web:3a6a50410d322d9a2d042b"
 };
 
-const DAYS=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-const COLORS=["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8"];
-const STORAGE="registroPedagogicoNuovoV1";
-const DEFAULT={children:[],sessions:[],commitments:[],availability:{start:"08:00",end:"20:00"}};
+let db = null;
+let firestore = null;
+let auth = null;
+let cloudLoaded = false;
 
-let data=loadLocal();
-let selectedChildId=null;
-let potentialVisible=false;
-let db=null, fs=null, cloudReady=false, saving=false;
+async function initFirebase() {
+  try {
+    const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
+    firestore = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
+    const firebaseAuth = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
 
-function cloneDefault(){return JSON.parse(JSON.stringify(DEFAULT))}
-function normalize(raw){
-  const d=raw&&typeof raw==="object"?raw:{};
-  return {
-    children:Array.isArray(d.children)?d.children:[],
-    sessions:Array.isArray(d.sessions)?d.sessions:[],
-    commitments:Array.isArray(d.commitments)?d.commitments:[],
-    availability:d.availability&&d.availability.start&&d.availability.end?d.availability:{start:"08:00",end:"20:00"}
-  };
-}
-function loadLocal(){try{return normalize(JSON.parse(localStorage.getItem(STORAGE)||"null"))}catch{return cloneDefault()}}
-function uid(){return "id_"+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
-function euro(v){return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(v)||0)}
-function toMin(t){const p=String(t||"00:00").split(":").map(Number);return p[0]*60+p[1]}
-function duration(s,e){return Math.max(0,(toMin(e)-toMin(s))/60)}
-function fmtHours(v){const m=Math.round((Number(v)||0)*60),h=Math.floor(m/60),r=m%60;return h?(r?h+" h "+r+" min":h+" h"):r+" min"}
-function child(id){return data.children.find(c=>c.id===id)}
-function saveLocal(){localStorage.setItem(STORAGE,JSON.stringify(data))}
-function status(text,online){const el=document.getElementById("syncStatus");el.textContent=text;el.className="sync"+(online?"":" offline")}
+    const app = firebaseApp.initializeApp(firebaseConfig);
+    auth = firebaseAuth.getAuth(app);
+    db = firestore.getFirestore(app);
 
-async function saveAll(){
-  saveLocal();
-  if(cloudReady&&db&&fs&&!saving){
-    saving=true;
-    try{await fs.setDoc(fs.doc(db,"registroPedagogico","archivio"),data);status("● Archivio sincronizzato",true)}
-    catch(e){console.error(e);status("● Salvato solo sul dispositivo",false)}
-    finally{saving=false}
-  }
-}
-function renderAll(){renderHome();renderChildren();renderChildDetail();renderAgenda();renderMoney();saveAll()}
+    // L'accesso resta valido fino alla chiusura del browser.
+    await firebaseAuth.setPersistence(auth, firebaseAuth.browserSessionPersistence);
 
-async function initFirebase(){
-  status("● Connessione archivio...",false);
-  try{
-    const appMod=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
-    fs=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
-    const authMod=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
-    const app=appMod.initializeApp(firebaseConfig);
-    db=fs.getFirestore(app);
-    const auth=authMod.getAuth(app);
-    await authMod.setPersistence(auth,authMod.browserLocalPersistence);
-    let user=auth.currentUser;
-    if(!user){
-      user=await new Promise(resolve=>{
-        const unsub=authMod.onAuthStateChanged(auth,u=>{unsub();resolve(u)});
+    // Controlla se esiste gia' una sessione.
+    const user = await new Promise(resolve => {
+      const unsubscribe = firebaseAuth.onAuthStateChanged(auth, currentUser => {
+        unsubscribe();
+        resolve(currentUser);
       });
+    });
+
+    // Se non c'e' una sessione, chiede email e password.
+    if (!user) {
+      const email = prompt("Inserisci la tua email:");
+      if (!email) {
+        alert("Accesso annullato.");
+        return;
+      }
+
+      const password = prompt("Inserisci la password:");
+      if (!password) {
+        alert("Accesso annullato.");
+        return;
+      }
+
+      await firebaseAuth.signInWithEmailAndPassword(auth, email.trim(), password);
     }
-    if(!user){
-      const email=prompt("Email per accedere all'archivio:");
-      const password=email?prompt("Password:"):"";
-      if(email&&password) await authMod.signInWithEmailAndPassword(auth,email.trim(),password);
-      else {status("● Modalità locale",false);renderAll();return}
+
+    // Solo dopo l'accesso carica l'archivio online.
+    const ref = firestore.doc(db, "registroPedagogico", "archivio");
+    const snapshot = await firestore.getDoc(ref);
+
+    if (snapshot.exists()) {
+      const cloudData = snapshot.data();
+      if (cloudData) {
+        data = {
+          children: Array.isArray(cloudData.children) ? cloudData.children : [],
+          sessions: Array.isArray(cloudData.sessions) ? cloudData.sessions : [],
+          commitments: Array.isArray(cloudData.commitments) ? cloudData.commitments : []
+        };
+        localStorage.setItem("registroPedagogicoV2", JSON.stringify(data));
+      }
+    } else {
+      await firestore.setDoc(ref, data);
     }
-    const ref=fs.doc(db,"registroPedagogico","archivio");
-    const snap=await fs.getDoc(ref);
-    if(snap.exists()){
-      const cloud=normalize(snap.data());
-      if(cloud.children.length||cloud.sessions.length||cloud.commitments.length) data=cloud;
-      else await fs.setDoc(ref,data);
-    }else await fs.setDoc(ref,data);
-    cloudReady=true;saveLocal();status("● Archivio sincronizzato",true);renderAll();
-  }catch(e){
-    console.error("Firebase",e);status("● Modalità locale - archivio online non disponibile",false);renderAll();
+
+    cloudLoaded = true;
+    renderAll();
+
+    // L'app viene mostrata SOLO dopo login e caricamento archivio.
+    document.body.style.display = "block";
+
+  } catch (error) {
+    console.error("Errore Firebase:", error);
+    cloudLoaded = false;
+    alert("⚠️ Accesso o archivio online non disponibile: " + error.message);
+    // Non mostrare l'app in caso di errore, cosi' non si vede l'anteprima.
   }
+}
+
+const DAYS = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+const COLORS = ["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8","#d1a916"];
+
+let data = JSON.parse(localStorage.getItem("registroPedagogicoV2") || '{"children":[],"sessions":[],"commitments":[]}');
+let selectedChildId = null;
+
+function saveData(){
+  localStorage.setItem("registroPedagogicoV2", JSON.stringify(data));
+
+  // Quando Firebase è pronto, salva automaticamente anche nell'archivio unico online.
+  if(cloudLoaded && db && firestore){
+    firestore.setDoc(
+      firestore.doc(db,"registroPedagogico","archivio"),
+      {
+        children:data.children || [],
+        sessions:data.sessions || [],
+        commitments:data.commitments || []
+      }
+    ).catch(function(error){
+      console.error("Errore salvataggio Firebase:",error);
+    });
+  }
+}
+
+function uid(){
+  return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+function euro(value){
+  return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(value)||0);
+}
+
+function toMinutes(time){
+  const parts = String(time || "00:00").split(":").map(Number);
+  return parts[0]*60 + parts[1];
+}
+
+function durationHours(start,end){
+  return Math.max(0,(toMinutes(end)-toMinutes(start))/60);
+}
+
+function formatHours(value){
+  const h = Math.floor(value);
+  const m = Math.round((value-h)*60);
+  if(m===0) return h + " h";
+  if(h===0) return m + " min";
+  return h + " h " + m + " min";
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g,function(ch){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch];
+  });
+}
+
+function childById(id){
+  return data.children.find(function(c){ return c.id===id; });
+}
+
+function activeSchedule(child){
+  if(child.fixed===false && child.active===false) return [];
+  return Array.isArray(child.schedule) ? child.schedule : [];
+}
+
+function getAvailability(){
+  const defaults=[{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"},{start:"08:00",end:"20:00"}];
+  if(!Array.isArray(data.availability) || data.availability.length!==6) data.availability=defaults;
+  return data.availability;
+}
+function isWithinAvailability(day,start,end){ const a=getAvailability()[day]; return a && start>=a.start && end<=a.end; }
+function allEvents(day,ignoreChildId){
+  const out=[];
+  data.children.forEach(function(c){ if(c.id===ignoreChildId) return; activeSchedule(c).forEach(function(x){if(Number(x.day)===Number(day)) out.push({name:c.name,start:x.start,end:x.end});}); });
+  data.commitments.forEach(function(x){if(Number(x.day)===Number(day)) out.push({name:x.name,start:x.start,end:x.end});});
+  return out;
+}
+function overlaps(day,start,end,ignoreChildId){
+  const a=toMinutes(start), b=toMinutes(end);
+  return allEvents(day,ignoreChildId).filter(function(e){return a<toMinutes(e.end) && b>toMinutes(e.start);});
+}
+function suggestedSlots(day,durationMinutes,limit){
+  const a=getAvailability()[day]; if(!a) return [];
+  const result=[], step=30;
+  for(let t=toMinutes(a.start); t+durationMinutes<=toMinutes(a.end); t+=step){
+    const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+    const en=addMinutes(st,durationMinutes);
+    if(!overlaps(day,st,en).length) result.push(st+"–"+en);
+    if(result.length>=(limit||3)) break;
+  } return result;
+}
+function renderFreeSlots(){
+  const box=document.getElementById("freeSlots"); if(!box) return;
+  const items=[]; const av=getAvailability();
+  for(let d=0;d<6;d++){
+    const a=av[d]; if(!a) continue;
+    const slots=[]; let open=null;
+    for(let t=toMinutes(a.start);t<toMinutes(a.end);t+=30){
+      const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+      const free=!overlaps(d,st,addMinutes(st,30)).length;
+      if(free && open===null) open=st;
+      if((!free || t+30>=toMinutes(a.end)) && open!==null){ const en=free&&t+30>=toMinutes(a.end)?addMinutes(st,30):st; if(toMinutes(en)-toMinutes(open)>=30) slots.push(open+"–"+en); open=null; }
+    }
+    if(slots.length) items.push('<div><b>'+DAYS[d]+'</b> '+slots.slice(0,2).join(' · ')+'</div>');
+  }
+  box.innerHTML=items.length?items.slice(0,3).join(''):'Nessuno spazio libero';
+  const btn=document.getElementById('showAllFree'); if(btn) btn.onclick=function(){ showModal('<h2>🟢 Tutti gli spazi disponibili</h2>'+items.join('')+'<div class="actions"><button id="closeFree">Chiudi</button></div>'); document.getElementById('closeFree').onclick=closeModal; };
+}
+
+function weekHours(){
+  return data.children.reduce(function(total,child){
+    return total + activeSchedule(child).reduce(function(sum,item){
+      return sum + durationHours(item.start,item.end);
+    },0);
+  },0);
+}
+
+function childWeekHours(child){
+  return activeSchedule(child).reduce(function(total,item){
+    return total + durationHours(item.start,item.end);
+  },0);
+}
+
+function occurrencesInMonth(dayIndex){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const days = new Date(year,month+1,0).getDate();
+  let count = 0;
+
+  for(let d=1; d<=days; d++){
+    const jsDay = new Date(year,month,d).getDay();
+    const index = jsDay===0 ? 6 : jsDay-1;
+    if(index===dayIndex) count++;
+  }
+  return count;
+}
+
+function isDateInCurrentWeek(date){
+  const today = new Date();
+  const current = new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const day = current.getDay()===0 ? 7 : current.getDay();
+  const monday = new Date(current);
+  monday.setDate(current.getDate()-day+1);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return date>=monday && date<=sunday;
+}
+
+function childMonthHours(child){
+  const schedule = activeSchedule(child);
+  if(child.fixed!==false){
+    return schedule.reduce(function(total,item){
+      return total + durationHours(item.start,item.end)*occurrencesInMonth(item.day);
+    },0);
+  }
+
+  // Per i bambini non fissi conta solo la settimana impostata come attiva.
+  if(child.active===false) return 0;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const days = new Date(year,month+1,0).getDate();
+  let total = 0;
+
+  schedule.forEach(function(item){
+    for(let d=1; d<=days; d++){
+      const date = new Date(year,month,d);
+      const index = date.getDay()===0 ? 6 : date.getDay()-1;
+      if(index===Number(item.day) && isDateInCurrentWeek(date)){
+        total += durationHours(item.start,item.end);
+      }
+    }
+  });
+  return total;
+}
+
+function monthHours(){
+  return data.children.reduce(function(total,child){
+    return total + childMonthHours(child);
+  },0);
+}
+
+function childActualMonthHours(childId){
+  const now = new Date();
+  const prefix = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return data.sessions.filter(function(session){
+    return session.childId===childId && String(session.date||"").slice(0,7)===prefix;
+  }).reduce(function(total,session){
+    return total + durationHours(session.start,session.end);
+  },0);
+}
+
+function monthlyForecast(){
+  return data.children.reduce(function(total,child){
+    return total + childMonthHours(child)*(Number(child.rate)||0);
+  },0);
+}
+
+function childMoney(childId){
+  const child = childById(childId);
+  const sessions = data.sessions.filter(function(s){ return s.childId===childId; });
+  const rate = Number(child ? child.rate : 0);
+
+  let earned = 0;
+  let received = 0;
+
+  sessions.forEach(function(session){
+    const amount = durationHours(session.start,session.end)*rate;
+    earned += amount;
+    if(session.paid===true) received += amount;
+  });
+
+  return {earned:earned,received:received,due:earned-received};
 }
 
 function setView(name){
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===name));
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
-  if(name==="agenda")renderAgenda();
-}
-document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
-
-function dayIndexToday(){const d=new Date().getDay();return d===0?6:d-1}
-function locationIcon(l){return l==="studio"?"🏢 In studio":"🏠 A casa"}
-
-function scheduleItems(){
-  const out=[];
-  data.children.forEach(c=>(Array.isArray(c.schedule)?c.schedule:[]).forEach(s=>out.push({...s,type:"child",childId:c.id,name:c.name,color:c.color,location:s.location||c.location||"casa"})));
-  data.commitments.forEach(s=>out.push({...s,type:"commitment",color:s.color||"#78869b"}));
-  return out;
-}
-
-function renderHome(){
-  const now=new Date(), today=dayIndexToday();
-  document.getElementById("currentDate").textContent=new Intl.DateTimeFormat("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(now);
-  document.getElementById("todayLabel").textContent=DAYS[today];
-  const items=scheduleItems().filter(x=>Number(x.day)===today).sort((a,b)=>toMin(a.start)-toMin(b.start));
-  document.getElementById("todayAppointments").innerHTML=items.length?items.map(x=>`<div class="appointment"><b>${esc(x.name)}</b><small>${x.start}–${x.end} · ${x.type==="child"?locationIcon(x.location):esc(x.type||"Impegno")}</small></div>`).join(""):'<div class="empty">Nessun appuntamento previsto oggi.</div>';
-  const upcoming=[];
-  for(let off=0;off<6;off++){const day=(today+off)%6;scheduleItems().filter(x=>Number(x.day)===day).sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(x=>upcoming.push({day,off,...x}))}
-  document.getElementById("upcomingAppointments").innerHTML=upcoming.slice(0,8).map(x=>`<div class="appointment"><b><span class="color-dot" style="background:${x.color}"></span>${esc(x.name)}</b><small>${x.off===0?"Oggi":DAYS[x.day]} · ${x.start}–${x.end}${x.type==="child"?" · "+locationIcon(x.location):""}</small></div>`).join("")||'<div class="empty">Nessun appuntamento.</div>';
-  const free=findFreeSpaces().slice(0,5);
-  document.getElementById("freeSpaces").innerHTML=free.length?free.map(x=>`<div class="appointment"><b>${DAYS[x.day]}</b><small>${x.start}–${x.end}</small></div>`).join(""):'<div class="empty">Nessuno spazio libero.</div>';
-  const children=data.children.map(c=>`<div class="child-item" style="--child:${c.color}" data-home-child="${c.id}"><span><b>${esc(c.name)}</b><div class="child-meta">${esc(c.school||"Scuola non indicata")} · ${esc(c.grade||"")}</div></span><span>›</span></div>`).join("");
-  document.getElementById("homeChildren").innerHTML=children||'<div class="empty">Ancora nessun bambino.</div>';
-  document.querySelectorAll("[data-home-child]").forEach(e=>e.addEventListener("click",()=>{selectedChildId=e.dataset.homeChild;setView("children");renderChildren();renderChildDetail()}));
-}
-
-function findFreeSpaces(){
-  const result=[],start=toMin(data.availability.start),end=toMin(data.availability.end);
-  for(let day=0;day<6;day++){
-    for(let m=start;m<end;m+=30){
-      const busy=scheduleItems().some(x=>Number(x.day)===day&&m<toMin(x.end)&&m+30>toMin(x.start));
-      if(!busy) result.push({day,start:minTime(m),end:minTime(m+30)});
-    }
-  }
-  return result;
-}
-function minTime(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
-function addMin(t,mins){return minTime(toMin(t)+mins)}
-
-function renderChildren(){
-  const html=data.children.map(c=>`<div class="child-item ${selectedChildId===c.id?"selected":""}" style="--child:${c.color}" data-child="${c.id}"><span><b>${esc(c.name)}</b><div class="child-meta">${esc(c.school||"Scuola non indicata")} · ${esc(c.grade||"")}</div></span><span>›</span></div>`).join("");
-  document.getElementById("childrenList").innerHTML=html||'<div class="empty">Ancora nessun bambino.</div>';
-  document.querySelectorAll("[data-child]").forEach(e=>e.addEventListener("click",()=>{selectedChildId=e.dataset.child;renderChildren();renderChildDetail()}));
-}
-
-function weekBounds(){
-  const now=new Date();
-  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const day=today.getDay()===0?7:today.getDay();
-  const monday=new Date(today);monday.setDate(today.getDate()-day+1);
-  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
-  return {monday,sunday};
-}
-function dateInCurrentWeek(value){
-  if(!value)return false;
-  const p=String(value).split("-").map(Number);
-  const d=new Date(p[0],p[1]-1,p[2]);
-  const b=weekBounds();
-  return d>=b.monday&&d<=b.sunday;
-}
-function childPlannedWeekHours(c){
-  if(c.fixed===false&&c.active===false)return 0;
-  return (Array.isArray(c.schedule)?c.schedule:[]).reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childActualWeekHours(id){
-  return data.sessions.filter(s=>s.childId===id&&dateInCurrentWeek(s.date))
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childPaidHours(id){
-  return data.sessions.filter(s=>s.childId===id&&s.paid)
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function totalPlannedWeekHours(){
-  return data.children.reduce((t,c)=>t+childPlannedWeekHours(c),0);
-}
-function totalActualWeekHours(){
-  return data.children.reduce((t,c)=>t+childActualWeekHours(c.id),0);
-}
-function dateInCurrentMonth(value){
-  if(!value)return false;
-  const p=String(value).split("-").map(Number);
-  const d=new Date(p[0],p[1]-1,p[2]);
-  const now=new Date();
-  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-}
-function childMonthlyMoney(id){
-  const c=child(id),rate=Number(c?.rate)||0;
-  let total=0,received=0;
-  data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date)).forEach(s=>{
-    const amount=duration(s.start,s.end)*rate;
-    total+=amount;
-    if(s.paid) received+=amount;
-  });
-  return {total,received,due:total-received};
-}
-function childMoney(id){
-  const c=child(id),rate=Number(c?.rate)||0;let earned=0,received=0,unpaidHours=0;
-  data.sessions.filter(s=>s.childId===id).forEach(s=>{
-    const h=duration(s.start,s.end),amount=h*rate;
-    earned+=amount;
-    if(s.paid)received+=amount;else unpaidHours+=h;
-  });
-  return {earned,received,due:earned-received,paidHours:childPaidHours(id),unpaidHours};
-}
-
-function calculateMonthlyPotential(){
-  let weeklyHoursTotal=0;
-  data.children.forEach(c => {
-    const rate = Number(c.rate) || 0;
-    const weeklyH = (Array.isArray(c.schedule) ? c.schedule : []).reduce((t, s) => t + duration(s.start, s.end), 0);
-    weeklyHoursTotal += weeklyH * rate;
-  });
-  return weeklyHoursTotal * 4;
-}
-
-function sessionOptions(values){
-  return values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")+'<option value="Altro">✏️ Altro...</option>';
-}
-function sessionSelect(id,label,values){
-  return `<div><label>${label}</label>
-    <select id="${id}" onchange="window.toggleOtherField('${id}')">${sessionOptions(values)}</select>
-    <input id="${id}Other" style="display:none;margin-top:8px" placeholder="Scrivi tu..." />
-  </div>`;
-}
-window.toggleOtherField = function(id){
-  const select=document.getElementById(id);
-  const input=document.getElementById(id+"Other");
-  if(!select||!input)return;
-  input.style.display=select.value==="Altro"?"block":"none";
-  if(select.value==="Altro") input.focus();
-};
-
-function sessionValue(id){
-  const select=document.getElementById(id);
-  const input=document.getElementById(id+"Other");
-  if(select.value==="Altro"){
-    const custom=input.value.trim();
-    if(!custom){alert("Hai scelto Altro: scrivi la voce personalizzata.");throw new Error("custom value missing")}
-    return custom;
-  }
-  return select.value;
-}
-
-function renderChildDetail(){
-  const target=document.getElementById("childDetail"),c=child(selectedChildId);
-  if(!c){target.innerHTML='<div class="empty">Seleziona un bambino.</div>';return}
-  const sessions=data.sessions.filter(s=>s.childId===c.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  
-  let ageStr = "";
-  if(c.birthDate){
-    const diff = new Date() - new Date(c.birthDate);
-    const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-    if(years > 0 && years < 120) ageStr = ` · ${years} anni`;
-  }
-
-  target.innerHTML=`
-    <div class="section-head">
-      <div>
-        <h2 style="border-left:9px solid ${c.color};padding-left:10px">${esc(c.name)}</h2>
-        <div class="muted">
-          ${c.school ? '🏫 '+esc(c.school)+' ' : ''}
-          ${c.grade ? '('+esc(c.grade)+') ' : ''}
-          ${ageStr}
-          · ${locationIcon(c.location||"casa")} 
-          · ${c.fixed===false?"Occasionale":"Fisso"}
-        </div>
-      </div>
-      <div><button id="editChild">✏️ Modifica</button><button class="danger" id="deleteChild">🗑️</button></div>
-    </div>
-    
-    ${c.difficulties ? `<div class="note" style="margin-bottom:15px"><b>📌 Difficoltà / Obiettivi / Note iniziali:</b><br>${esc(c.difficulties)}</div>` : ''}
-
-    ${sessionFormHtml(c)}
-    <h3 style="margin-top:20px">📚 Storico sessioni</h3>
-    <div class="table-wrap">${sessions.length?historyHtml(sessions):'<div class="empty">Nessuna sessione salvata.</div>'}</div>`;
-  
-  document.getElementById("editChild").onclick=()=>openChildForm(c);
-  document.getElementById("deleteChild").onclick=()=>deleteChild(c.id);
-  document.getElementById("saveSession").onclick=saveSession;
-
-  document.querySelectorAll(".status-select").forEach(sel => sel.onchange = (e) => {
-    const sessionId = e.target.dataset.id;
-    const isPaid = e.target.value === "true";
-    const sessionObj = data.sessions.find(x => x.id === sessionId);
-    if(sessionObj){
-      sessionObj.paid = isPaid;
-      if(isPaid) sessionObj.paidDate = new Date().toISOString().slice(0,10);
-      renderAll();
-    }
-  });
-
-  document.querySelectorAll(".delete-session").forEach(b=>b.onclick=()=>deleteSession(b.dataset.id));
-}
-
-function sessionFormHtml(c){
-  return `<div class="panel" style="margin-top:16px"><h3>➕ Nuova sessione</h3>
-<div class="row3"><div><label>Data</label><input id="sDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label>Dalle</label><input id="sStart" type="time" value="15:00"></div><div><label>Alle</label><input id="sEnd" type="time" value="16:00"></div></div>
-<div class="row2">${sessionSelect("sMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])}${sessionSelect("sSubject","📚 Lavoro di oggi",["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])}</div>
-<div class="row2">${sessionSelect("sWork","🎯 Tipo di lavoro",["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])}${sessionSelect("sAttention","👀 Attenzione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</div>
-<div class="row2">${sessionSelect("sCollaboration","🤝 Collaborazione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}<div><label>💶 Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
-<div class="row2"><div><label>📍 Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div></div>
-<label>📝 Note / comportamento</label><textarea id="sNotes"></textarea>
-<label>📌 Cose da fare per la prossima volta</label><textarea id="sNext"></textarea>
-<div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div></div>`;
-}
-
-function saveSession(){
-  const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
-  if(!selectedChildId||!start||!end||start>=end){alert("Controlla gli orari.");return}
-  let mood,subject,workType,attention,collaboration;
-  try{
-    mood=sessionValue("sMood");
-    subject=sessionValue("sSubject");
-    workType=sessionValue("sWork");
-    attention=sessionValue("sAttention");
-    collaboration=sessionValue("sCollaboration");
-  }catch(e){return}
-  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,mood,subject,workType,attention,collaboration,notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
+  document.querySelectorAll(".view").forEach(function(view){ view.classList.remove("active"); });
+  document.querySelectorAll(".tab").forEach(function(tab){ tab.classList.remove("active"); });
+  document.getElementById(name).classList.add("active");
+  document.querySelector('.tab[data-view="'+name+'"]').classList.add("active");
   renderAll();
 }
 
-function historyHtml(list){
-  return `<table>
-    <tr><th>Data</th><th>Orario</th><th>Ore</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th></th></tr>
-    ${list.map(s=>`
-      <tr>
-        <td>${esc(s.date)}</td>
-        <td>${esc(s.start)}–${esc(s.end)}</td>
-        <td>${formatHours(duration(s.start,s.end))}</td>
-        <td>${esc(s.subject||"")}<br><small>${esc(s.workType||"")}</small></td>
-        <td>${locationIcon(s.location||"casa")}</td>
-        <td>
-          <select class="status-select" data-id="${s.id}" style="padding:4px 8px; font-size:12px; font-weight:700; border-radius:8px; background:${s.paid?'#dff4e8':'#fde4e5'}; color:${s.paid?'#24744f':'#b23c46'}; border:1px solid var(--line);">
-            <option value="true" ${s.paid?'selected':''}>🟢 Pagato</option>
-            <option value="false" ${!s.paid?'selected':''}>🔴 Non pagato</option>
-          </select>
-        </td>
-        <td><button class="danger delete-session" data-id="${s.id}" style="padding:6px 10px; font-size:12px;">🗑️</button></td>
-      </tr>
-    `).join("")}
-  </table>`;
+document.querySelectorAll(".tab").forEach(function(tab){
+  tab.addEventListener("click",function(){ setView(tab.dataset.view); });
+});
+
+function renderChildLists(){
+  const html = data.children.length ? data.children.map(function(child){
+    return '<div class="child-item '+(selectedChildId===child.id?"selected":"")+'" style="--child:'+child.color+'" data-child="'+child.id+'">'+
+      '<span><b>'+escapeHtml(child.name)+'</b><br><small class="muted">'+(child.fixed===false?"Non fisso":"Fisso")+'</small></span>'+
+      '</div>';
+  }).join("") : '<div class="empty">Ancora nessun bambino.</div>';
+
+  document.getElementById("childrenList").innerHTML = html;
+  document.getElementById("homeChildren").innerHTML = html;
+
+  document.querySelectorAll("[data-child]").forEach(function(el){
+    el.addEventListener("click",function(){
+      selectedChildId = el.dataset.child;
+      renderAll();
+    });
+  });
 }
 
-function deleteSession(id){if(confirm("Eliminare questa sessione?")){data.sessions=data.sessions.filter(s=>s.id!==id);renderAll()}}
-function deleteChild(id){if(confirm("Eliminare il bambino e tutto il suo storico?")){data.children=data.children.filter(c=>c.id!==id);data.sessions=data.sessions.filter(s=>s.childId!==id);selectedChildId=null;renderAll()}}
+function renderDashboard(){
+  document.getElementById("weekHours").textContent = formatHours(weekHours());
+  document.getElementById("monthForecast").textContent = euro(monthlyForecast());
+
+  let occupied = 0;
+  data.children.forEach(function(child){
+    activeSchedule(child).forEach(function(item){
+      occupied += Math.ceil(durationHours(item.start,item.end)*2);
+    });
+  });
+  data.commitments.forEach(function(item){
+    occupied += Math.ceil(durationHours(item.start,item.end)*2);
+  });
+
+  const totalSlots = 6*26;
+  document.getElementById("freeSlots").textContent = Math.max(0,totalSlots-occupied);
+
+  const sessions = data.sessions.slice().sort(function(a,b){
+    return String(b.date).localeCompare(String(a.date));
+  }).slice(0,8);
+
+  if(!sessions.length){
+    document.getElementById("recentSessions").innerHTML = '<div class="empty">Nessuna sessione salvata.</div>';
+    return;
+  }
+
+  let html = '<table><tr><th>Bambino</th><th>Data</th><th>Ore</th><th>Pagamento</th></tr>';
+  sessions.forEach(function(session){
+    const child = childById(session.childId);
+    html += '<tr><td>'+escapeHtml(child ? child.name : "Eliminato")+'</td>'+
+      '<td>'+escapeHtml(session.date)+'</td>'+
+      '<td>'+formatHours(durationHours(session.start,session.end))+'</td>'+
+      '<td><select class="compact-select payment-select" data-session="'+session.id+'">'+
+        '<option value="false" '+(!session.paid?'selected':'')+'>🔴 Non pagato</option>'+
+        '<option value="true" '+(session.paid?'selected':'')+'>🟢 Pagato</option>'+
+      '</select></td></tr>';
+  });
+  html += '</table>';
+  document.getElementById("recentSessions").innerHTML = html;
+  bindPaymentSelects();
+}
+
+function bindPaymentSelects(){
+  document.querySelectorAll(".payment-select").forEach(function(select){
+    select.addEventListener("change",function(){
+      const session = data.sessions.find(function(s){ return s.id===select.dataset.session; });
+      if(!session) return;
+      session.paid = select.value==="true";
+      if(session.paid) session.paidDate = new Date().toISOString().slice(0,10);
+      else delete session.paidDate;
+      renderAll();
+    });
+  });
+}
+
+function bindMarkPaidButtons(){
+  document.querySelectorAll(".mark-paid").forEach(function(button){
+    button.addEventListener("click",function(){
+      markSessionPaid(button.dataset.session);
+    });
+  });
+}
+
+function dateInCurrentMonth(value){
+  if(!value) return false;
+  const p=String(value).split("-").map(Number);
+  const d=new Date(p[0],p[1]-1,p[2]), now=new Date();
+  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+}
+function childMonthlySummary(child){
+  const rate=Number(child.rate)||0;
+  let actual=0,unpaid=0,total=0,received=0;
+  data.sessions.filter(function(s){return s.childId===child.id && dateInCurrentMonth(s.date);}).forEach(function(s){
+    const h=durationHours(s.start,s.end), amount=h*rate;
+    actual+=h; total+=amount;
+    if(s.paid) received+=amount; else unpaid+=h;
+  });
+  return {actual:actual,unpaid:unpaid,total:total,received:received,due:total-received};
+}
+function renderMoney(){
+  let monthlyTotal=0,received=0,due=0;
+  const rows=data.children.map(function(child){
+    const m=childMonthlySummary(child);
+    monthlyTotal+=m.total; received+=m.received; due+=m.due;
+    return '<tr><td><b>'+escapeHtml(child.name)+'</b></td><td>'+formatHours(m.actual)+'</td><td>'+formatHours(m.unpaid)+'</td></tr>';
+  }).join("");
+  document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
+  document.getElementById("received").textContent=euro(received);
+  document.getElementById("due").textContent=euro(due);
+  document.getElementById("moneyTable").innerHTML=rows
+    ? '<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>'+rows+'</table>'
+    : '<div class="empty">Ancora nessun bambino.</div>';
+}
+
+function monthKey(date){
+  return String(date || "").slice(0,7);
+}
+
+function monthLabel(date){
+  return new Intl.DateTimeFormat("it-IT",{month:"short"}).format(date).replace(".","");
+}
+
+function lastMonths(count){
+  const months = [];
+  const now = new Date();
+  for(let i=count-1;i>=0;i--){
+    months.push(new Date(now.getFullYear(),now.getMonth()-i,1));
+  }
+  return months;
+}
+
+function renderTrendSection(){
+  const select = document.getElementById("trendChild");
+  const chart = document.getElementById("trendChart");
+  if(!select || !chart) return;
+
+  const previous = select.value;
+  select.innerHTML = data.children.length
+    ? data.children.map(function(child){
+        return '<option value="'+escapeHtml(child.id)+'">'+escapeHtml(child.name)+'</option>';
+      }).join("")
+    : '<option value="">Nessun bambino</option>';
+
+  if(previous && data.children.some(function(c){return c.id===previous;})) select.value = previous;
+  else if(selectedChildId && data.children.some(function(c){return c.id===selectedChildId;})) select.value = selectedChildId;
+
+  function draw(){
+    const childId = select.value;
+    const child = childById(childId);
+    if(!child){
+      chart.innerHTML = '<div class="empty">Inserisci un bambino per vedere l’andamento.</div>';
+      return;
+    }
+
+    const months = lastMonths(6);
+    const values = months.map(function(date){
+      const key = date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0");
+      return data.sessions
+        .filter(function(session){ return session.childId===child.id && monthKey(session.date)===key; })
+        .reduce(function(total,session){ return total+durationHours(session.start,session.end); },0);
+    });
+
+    const sessionCount = data.sessions.filter(function(session){ return session.childId===child.id; }).length;
+    const max = Math.max(1,...values);
+    const W=700,H=260,padL=55,padR=25,padT=30,padB=48;
+    const chartW=W-padL-padR, chartH=H-padT-padB;
+    const step=chartW/values.length, barW=Math.min(60,step*0.58);
+
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Andamento ore">';
+    for(let i=0;i<=4;i++){
+      const y=padT+chartH-(chartH*i/4);
+      const value=(max*i/4).toFixed(max<5?1:0);
+      svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#dde4ef"/>';
+      svg+='<text x="'+(padL-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" fill="#71809a">'+value+'h</text>';
+    }
+    values.forEach(function(value,index){
+      const h=(value/max)*chartH;
+      const x=padL+step*index+(step-barW)/2;
+      const y=padT+chartH-h;
+      const label=monthLabel(months[index]);
+      svg+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="8" fill="'+child.color+'"><title>'+label+': '+formatHours(value)+'</title></rect>';
+      svg+='<text x="'+(x+barW/2)+'" y="'+(H-18)+'" text-anchor="middle" font-size="12" fill="#71809a">'+label+'</text>';
+      if(value>0) svg+='<text x="'+(x+barW/2)+'" y="'+Math.max(18,y-7)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#263858">'+(Number.isInteger(value)?value:value.toFixed(1))+'h</text>';
+    });
+    svg+='</svg>';
+
+    const totalHours = values.reduce(function(a,b){return a+b;},0);
+    chart.innerHTML =
+      '<div class="trend-summary">'+
+        '<span class="trend-pill">👤 '+escapeHtml(child.name)+'</span>'+
+        '<span class="trend-pill">⏱️ '+formatHours(totalHours)+' negli ultimi 6 mesi</span>'+
+        '<span class="trend-pill">📚 '+sessionCount+' sessioni totali</span>'+
+      '</div>'+
+      '<div class="trend-chart">'+svg+'</div>';
+  }
+
+  select.onchange = draw;
+  draw();
+}
+function optionList(values){
+  return values.map(function(value){
+    return '<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>';
+  }).join("") + '<option value="Altro">Altro</option>';
+}
+
+function showModal(content){
+  document.getElementById("modalContent").innerHTML = content;
+  document.getElementById("modal").classList.add("show");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.remove("show");
+}
+
+document.getElementById("modal").addEventListener("click",function(event){
+  if(event.target.id==="modal") closeModal();
+});
+
+function openChildForm(child){
+  const c = child || {};
+  showModal(
+    '<h2>'+(child?"✏️ Modifica bambino":"➕ Inserisci bambino")+'</h2>'+
+    '<label>Nome del bambino</label><input id="childName" value="'+escapeHtml(c.name||"")+'">'+
+    '<div class="row2">'+
+      '<div><details><summary><b>💶 Compenso</b></summary><label>Compenso orario (€)</label><input id="childRate" type="number" step="0.01" value="'+(c.rate||"")+'"></details></div>'+
+      '<div><label>È fisso ogni settimana?</label><select id="childFixed"><option value="true" '+(c.fixed!==false?"selected":"")+'>Sì</option><option value="false" '+(c.fixed===false?"selected":"")+'>No</option></select></div>'+
+    '</div>'+
+    '<label>📍 Dove lo seguo?</label><select id="childLocation"><option value="casa" '+((c.location||"casa")==="casa"?"selected":"")+'>🏠 A casa</option><option value="studio" '+((c.location||"casa")==="studio"?"selected":"")+'>🏢 In studio</option></select>'+
+    '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
+    '<h3>📅 Giorni, ora e durata</h3><div class="muted">Inserisci l’ora di inizio e la durata: l’ora di fine viene calcolata automaticamente.</div><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno</button>'+
+    '<details><summary><b>Informazioni facoltative</b></summary>'+
+      '<label>Età</label><input id="childAge" value="'+escapeHtml(c.age||"")+'">'+
+      '<label>Classe</label><input id="childClass" value="'+escapeHtml(c.class||"")+'">'+
+      '<label>Scuola</label><input id="childSchool" value="'+escapeHtml(c.school||"")+'">'+
+      '<label>Obiettivi</label><textarea id="childGoals">'+escapeHtml(c.goals||"")+'</textarea>'+
+      '<label>Note</label><textarea id="childNotes">'+escapeHtml(c.notes||"")+'</textarea>'+
+    '</details>'+
+    '<div class="actions"><button class="primary" id="saveChildButton">💾 Salva bambino</button><button id="cancelChildButton">Annulla</button></div>'
+  );
+
+  const rows = (c.schedule && c.schedule.length) ? c.schedule : [{day:0,start:"15:00",end:"16:00"}];
+  rows.forEach(addScheduleRow);
+
+  document.getElementById("addScheduleRow").addEventListener("click",function(){
+    addScheduleRow({day:0,start:"15:00",end:"16:00"});
+  });
+
+  document.getElementById("cancelChildButton").addEventListener("click",closeModal);
+  document.getElementById("saveChildButton").addEventListener("click",function(){
+    saveChild(child ? child.id : null);
+  });
+}
+
+function addScheduleRow(item){
+  const row = document.createElement("div");
+  row.className = "row3 schedule-row";
+  const mins=Math.max(30,Math.round(durationHours(item.start,item.end)*60));
+  row.innerHTML = '<select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select>'+ '<input class="schedule-start" type="time" value="'+item.start+'">'+ '<div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button class="remove-schedule">×</button></div>'+ '<div class="muted schedule-end-preview" style="grid-column:2/4">Fine: '+item.end+'</div>';
+  document.getElementById("scheduleRows").appendChild(row);
+  const dur=row.querySelector('.schedule-duration'); dur.value=String([30,60,90,120,150,180].includes(mins)?mins:60);
+  function update(){ row.querySelector('.schedule-end-preview').textContent='Fine: '+addMinutes(row.querySelector('.schedule-start').value,Number(dur.value)); }
+  row.querySelector('.schedule-start').addEventListener('change',update); dur.addEventListener('change',update); update();
+  row.querySelector(".remove-schedule").addEventListener("click",function(){ row.remove(); });
+}
+
+function saveChild(existingId){
+  const name = document.getElementById("childName").value.trim();
+  if(!name){
+    alert("Inserisci il nome del bambino.");
+    return;
+  }
+
+  const schedule = Array.from(document.querySelectorAll(".schedule-row")).map(function(row){
+    const start=row.querySelector(".schedule-start").value;
+    const duration=Number(row.querySelector(".schedule-duration").value)||60;
+    return {day:Number(row.querySelector(".schedule-day").value),start:start,end:addMinutes(start,duration)};
+  }).filter(function(item){ return item.start && item.end && item.start<item.end; });
+
+  for(const item of schedule){
+    if(!isWithinAvailability(item.day,item.start,item.end)){
+      alert("⚠️ "+DAYS[item.day]+": l'orario "+item.start+"–"+item.end+" è fuori dai tuoi orari disponibili."); return;
+    }
+    const conflict=overlaps(item.day,item.start,item.end,existingId);
+    if(conflict.length){
+      const alternatives=suggestedSlots(item.day,toMinutes(item.end)-toMinutes(item.start),3);
+      alert("⚠️ Sovrapposizione con: "+conflict.map(function(x){return x.name+" ("+x.start+"–"+x.end+")";}).join(", ")+".\n\nSlot alternativi: "+(alternatives.join(" · ")||"nessuno")); return;
+    }
+  }
+
+  const old = existingId ? childById(existingId) : null;
+  const child = {
+    id:existingId || uid(),
+    name:name,
+    rate:Number(document.getElementById("childRate").value)||0,
+    fixed:document.getElementById("childFixed").value==="true",
+    active:document.getElementById("childActive").value==="true",
+    location:document.getElementById("childLocation").value,
+    schedule:schedule,
+    color:old ? old.color : COLORS[data.children.length % COLORS.length],
+    age:document.getElementById("childAge").value,
+    class:document.getElementById("childClass").value,
+    school:document.getElementById("childSchool").value,
+    goals:document.getElementById("childGoals").value,
+    notes:document.getElementById("childNotes").value
+  };
+
+  if(old) Object.assign(old,child);
+  else data.children.push(child);
+
+  selectedChildId = child.id;
+  closeModal();
+  renderAll();
+}
+
+function renderChildDetail(){
+  const target = document.getElementById("childDetail");
+  const child = childById(selectedChildId);
+  if(!child){
+    target.innerHTML = '<div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>';
+    return;
+  }
+  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; })
+    .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+
+  target.innerHTML =
+    '<div class="section-head">'+
+      '<div><h2 style="border-left:10px solid '+child.color+';padding-left:10px">'+escapeHtml(child.name)+'</h2>'+
+      '<div class="muted">'+((child.location||"casa")==="studio"?"🏢 In studio":"🏠 A casa")+' · '+(child.fixed?"Fisso":"Occasionale")+' · '+(child.active?"Attivo":"Non attivo")+'</div></div>'+
+      '<div><button id="editChild">✏️ Modifica</button> <button class="danger" id="deleteChild">🗑️ Elimina</button></div>'+
+    '</div>'+
+    sessionFormHtml()+
+    '<h3>📚 Storico</h3>'+
+    (sessions.length ? sessionHistoryHtml(sessions) : '<div class="empty">Nessuna sessione salvata.</div>');
+
+  document.getElementById("editChild").addEventListener("click",function(){ openChildForm(child); });
+  document.getElementById("deleteChild").addEventListener("click",function(){ deleteChild(child.id); });
+  document.getElementById("saveSession").addEventListener("click",saveSession);
+  bindSessionOtherFields();
+  bindPaymentSelects();
+  bindDownloadSessionButtons();
+  bindDeleteSessionButtons();
+}
+
+function sessionOtherSelect(id,label,values){
+  return '<div><label>'+label+'</label>'+
+    '<select id="'+id+'" class="session-other-select" data-other="'+id+'Other">'+optionList(values)+'</select>'+
+    '<input id="'+id+'Other" class="hidden" placeholder="✏️ Scrivi tu..."></div>';
+}
+function bindSessionOtherFields(){
+  document.querySelectorAll(".session-other-select").forEach(function(select){
+    select.addEventListener("change",function(){
+      const input=document.getElementById(select.dataset.other);
+      if(!input) return;
+      const show=select.value==="Altro";
+      input.classList.toggle("hidden",!show);
+      if(show) input.focus();
+    });
+  });
+}
+function sessionFieldValue(id){
+  const select=document.getElementById(id);
+  const input=document.getElementById(id+"Other");
+  if(select.value!=="Altro") return select.value;
+  const value=(input.value||"").trim();
+  return value || null;
+}
+
+function sessionFormHtml(){
+  return '<div class="panel" style="margin:16px 0">'+
+    '<h3>➕ Nuova sessione</h3>'+
+    '<div class="row3">'+
+      '<div><label>Data</label><input id="sessionDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+      '<div><label>Dalle</label><input id="sessionStart" type="time" value="15:00"></div>'+
+      '<div><label>Alle</label><input id="sessionEnd" type="time" value="16:00"></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      sessionOtherSelect("sessionMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])+
+      sessionOtherSelect("sessionSubject","📚 Lavoro di oggi",["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])+
+    '</div>'+
+    '<div class="row2">'+
+      sessionOtherSelect("sessionWork","🎯 Tipo di lavoro",["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])+
+      sessionOtherSelect("sessionAttention","👀 Attenzione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+
+    '</div>'+
+    '<div class="row2">'+
+      sessionOtherSelect("sessionCollaboration","🤝 Collaborazione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+
+      '<div><label>💶 Pagamento</label><select id="sessionPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div>'+
+    '</div>'+
+    '<label>📍 Luogo</label><select id="sessionLocation"><option value="casa">🏠 A casa</option><option value="studio">🏢 In studio</option></select>'+
+    '<label>📝 Note / comportamento</label><textarea id="sessionNotes"></textarea>'+
+    '<label>📌 Cose da fare per la prossima volta</label><textarea id="sessionNext" placeholder="Cosa riprendere, preparare o ricordare..."></textarea>'+
+    '<div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div>'+
+  '</div>';
+}
+
+function sessionHistoryHtml(sessions){
+  let html = '<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th>Azioni</th></tr>';
+
+  sessions.forEach(function(s){
+    html += '<tr>'+
+      '<td>'+escapeHtml(s.date)+'</td>'+
+      '<td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td>'+
+      '<td>'+escapeHtml(s.subject)+'<br><small>'+escapeHtml(s.workType)+'</small></td>'+
+      '<td>'+((s.location||"casa")==="studio"?"🏢 Studio":"🏠 Casa")+'</td>'+
+      '<td><select class="compact-select payment-select" data-session="'+s.id+'">'+
+        '<option value="false" '+(!s.paid?'selected':'')+'>🔴 Non pagato</option>'+
+        '<option value="true" '+(s.paid?'selected':'')+'>🟢 Pagato</option>'+
+      '</select></td>'+
+      '<td><button class="small-btn download-session" data-session="'+s.id+'">⬇️ Scarica</button> '+
+      '<button class="danger small-btn delete-session" data-session="'+s.id+'">🗑️</button></td>'+
+    '</tr>';
+  });
+
+  return html+'</table>';
+}
+
+function downloadSession(sessionId){
+  const session = data.sessions.find(function(s){ return s.id===sessionId; });
+  if(!session) return;
+  const child = childById(session.childId);
+  const safeName = String((child && child.name) || "bambino").replace(/[^a-z0-9_-]+/gi,"_");
+  const title = "Sessione - "+((child && child.name) || "Bambino")+" - "+session.date;
+
+  const html =
+    '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>'+escapeHtml(title)+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:10px}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin:14px 0}dt{font-weight:bold;margin-top:10px}dd{margin:3px 0 10px}</style>'+
+    '</head><body><h1>'+escapeHtml(title)+'</h1>'+
+    '<div class="box"><dl>'+
+    '<dt>Orario</dt><dd>'+escapeHtml(session.start)+'–'+escapeHtml(session.end)+'</dd>'+
+    '<dt>Stato d’animo</dt><dd>'+escapeHtml(session.mood)+'</dd>'+
+    '<dt>Lavoro di oggi</dt><dd>'+escapeHtml(session.subject)+' · '+escapeHtml(session.workType)+'</dd>'+
+    '<dt>Attenzione</dt><dd>'+escapeHtml(session.attention)+'</dd>'+
+    '<dt>Collaborazione</dt><dd>'+escapeHtml(session.collaboration)+'</dd>'+
+    '<dt>Prossima volta</dt><dd>'+escapeHtml(session.next || "—")+'</dd>'+
+    '<dt>Luogo</dt><dd>'+((session.location||"casa")==="studio"?"In studio":"A casa")+'</dd>'+
+    '<dt>Note</dt><dd>'+escapeHtml(session.notes || "—")+'</dd>'+
+    '<dt>Pagamento</dt><dd>'+ (session.paid ? "Pagato" : "Non pagato") +'</dd>'+
+    '</dl></div></body></html>';
+
+  const blob = new Blob([html],{type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "sessione_"+safeName+"_"+session.date+".html";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+}
+
+function bindDownloadSessionButtons(){
+  document.querySelectorAll(".download-session").forEach(function(button){
+    button.addEventListener("click",function(){
+      downloadSession(button.dataset.session);
+    });
+  });
+}
+function saveSession(){
+  const start = document.getElementById("sessionStart").value;
+  const end = document.getElementById("sessionEnd").value;
+  if(!start || !end || start>=end){
+    alert("Controlla gli orari della sessione.");
+    return;
+  }
+  const mood=sessionFieldValue("sessionMood");
+  const subject=sessionFieldValue("sessionSubject");
+  const workType=sessionFieldValue("sessionWork");
+  const attention=sessionFieldValue("sessionAttention");
+  const collaboration=sessionFieldValue("sessionCollaboration");
+  if([mood,subject,workType,attention,collaboration].some(function(v){return v===null;})){
+    alert("Hai scelto «Altro»: scrivi la tua voce nel campo comparso sotto la tendina.");
+    return;
+  }
+  data.sessions.push({
+    id:uid(),
+    childId:selectedChildId,
+    date:document.getElementById("sessionDate").value,
+    start:start,end:end,
+    mood:mood,subject:subject,workType:workType,attention:attention,collaboration:collaboration,
+    location:document.getElementById("sessionLocation").value,
+    notes:document.getElementById("sessionNotes").value,
+    next:document.getElementById("sessionNext").value,
+    paid:document.getElementById("sessionPaid").value==="true"
+  });
+  renderAll();
+}
+
+function markSessionPaid(sessionId){
+  const session = data.sessions.find(function(s){ return s.id===sessionId; });
+  if(!session) return;
+
+  if(confirm("Confermi che questa sessione è stata pagata?")){
+    session.paid = true;
+    session.paidDate = new Date().toISOString().slice(0,10);
+    renderAll();
+  }
+}
+
+function bindDeleteSessionButtons(){
+  document.querySelectorAll(".delete-session").forEach(function(button){
+    button.addEventListener("click",function(){
+      const id = button.dataset.session;
+      if(confirm("Eliminare questa sessione?")){
+        data.sessions = data.sessions.filter(function(s){ return s.id!==id; });
+        renderAll();
+      }
+    });
+  });
+}
+
+function deleteChild(childId){
+  if(!confirm("Eliminare il bambino e tutto il suo storico?")) return;
+  data.children = data.children.filter(function(c){ return c.id!==childId; });
+  data.sessions = data.sessions.filter(function(s){ return s.childId!==childId; });
+  selectedChildId = null;
+  renderAll();
+}
 
 function renderAgenda(){
-  let html='<div class="a-head">Ora</div>'+DAYS.map(d=>`<div class="a-head">${d}</div>`).join("");
-  const start=toMin(data.availability.start),end=toMin(data.availability.end),items=scheduleItems();
-  for(let m=start;m<end;m+=30){
-    html+=`<div class="time">${m%60===0?minTime(m):""}</div>`;
-    for(let day=0;day<6;day++){
-      const ev=items.filter(x=>Number(x.day)===day&&m<toMin(x.end)&&m+30>toMin(x.start));
-      if(ev.length){
-        const x=ev[0],text=m===toMin(x.start)?`<b>${esc(x.name)}</b><br>${x.start}–${x.end}${x.type==="child"?`<br>${locationIcon(x.location)}`:""}`:"";
-        html+=`<div class="slot" data-event="${x.id||""}"><div class="event" style="--event:${x.color}">${text||"&nbsp;"}</div></div>`;
-      }else html+=`<div class="slot free" data-day="${day}" data-time="${minTime(m)}"><span style="font-size:10px;color:#65a67a;padding:4px">LIBERO</span></div>`;
-    }
-  }
-  document.getElementById("agendaGrid").innerHTML=html;
-  document.querySelectorAll(".slot.free").forEach(e=>e.onclick=()=>openAgendaForm(Number(e.dataset.day),e.dataset.time));
-  document.querySelectorAll("[data-event]").forEach(e=>e.onclick=()=>{if(e.dataset.event)openEditAgenda(e.dataset.event)});
-}
-
-function openAgendaForm(day=0,start="08:00"){
-  modal(`<h2>➕ Aggiungi all'agenda</h2>
-  <label>Tipo</label><select id="aType"><option value="child">👧 Bambino</option><option value="commitment">📌 Impegno</option></select>
-  <div id="agendaDynamic"></div>
-  <div class="row3"><div><label>Giorno</label><select id="aDay">${DAYS.map((d,i)=>`<option value="${i}" ${i===day?"selected":""}>${d}</option>`).join("")}</select></div><div><label>Dalle</label><input id="aStart" type="time" value="${start}"></div><div><label>Alle</label><input id="aEnd" type="time" value="${addMin(start,60)}"></div></div>
-  <div class="actions"><button class="primary" id="saveAgendaItem">Salva</button><button id="cancelModal">Annulla</button></div>`);
-  const draw=()=>{
-    const type=document.getElementById("aType").value;
-    document.getElementById("agendaDynamic").innerHTML=type==="child"?`<label>Bambino</label><select id="aChild">${data.children.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><label>Luogo</label><select id="aLocation"><option value="casa">🏠 A casa</option><option value="studio">🏢 In studio</option></select>`:`<label>Tipo impegno</label><select id="aCommitmentType"><option>🚗 Spostamento</option><option>🏢 Studio / Sede</option><option>🏫 Scuola</option><option>📌 Impegno personale</option></select><label>Descrizione</label><input id="aName" placeholder="Es. Riunione">`;
-  };
-  document.getElementById("aType").onchange=draw; draw();
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveAgendaItem").onclick=()=>{
-    const s=document.getElementById("aStart").value,e=document.getElementById("aEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}
-    const day=Number(document.getElementById("aDay").value);
-    if(document.getElementById("aType").value==="child"){
-      const c=child(document.getElementById("aChild").value);if(!c){alert("Inserisci prima un bambino.");return}
-      c.schedule=c.schedule||[];c.schedule.push({id:uid(),day,start:s,end:e,location:document.getElementById("aLocation").value});
-    }else data.commitments.push({id:uid(),type:document.getElementById("aCommitmentType").value,name:document.getElementById("aName").value.trim()||document.getElementById("aCommitmentType").value,day,start:s,end:e,color:"#78869b"});
-    closeModal();renderAll();
-  };
-}
-
-function openEditAgenda(id){
-  let owner=null,item=null,type="";
-  for(const c of data.children){const found=(c.schedule||[]).find(s=>s.id===id);if(found){owner=c;item=found;type="child";break}}
-  if(!item){item=data.commitments.find(x=>x.id===id);if(item)type="commitment"}
-  if(!item)return;
-  modal(`<h2>✏️ Modifica appuntamento</h2><div class="note">${type==="child"?esc(owner.name)+" · "+locationIcon(item.location||owner.location):esc(item.name)}</div>
-  <div class="row3"><div><label>Giorno</label><select id="eDay">${DAYS.map((d,i)=>`<option value="${i}" ${Number(item.day)===i?"selected":""}>${d}</option>`).join("")}</select></div><div><label>Dalle</label><input id="eStart" type="time" value="${item.start}"></div><div><label>Alle</label><input id="eEnd" type="time" value="${item.end}"></div></div>
-  ${type==="child"?`<label>Luogo</label><select id="eLocation"><option value="casa" ${item.location==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${item.location==="studio"?"selected":""}>🏢 In studio</option></select>`:""}
-  <div class="actions"><button class="primary" id="saveEdit">Aggiorna</button><button class="danger" id="deleteEdit">Elimina</button><button id="cancelModal">Annulla</button></div>`);
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveEdit").onclick=()=>{
-    const s=document.getElementById("eStart").value,e=document.getElementById("eEnd").value;
-    if(!s||!e||s>=e){alert("Controlla gli orari.");return}
-    item.day=Number(document.getElementById("eDay").value);
-    item.start=s;item.end=e;
-    if(type==="child")item.location=document.getElementById("eLocation").value;
-    closeModal();renderAll();
-  };
-  document.getElementById("deleteEdit").onclick=()=>{
-    if(confirm("Eliminare questo impegno dall'agenda?")){
-      if(type==="child")owner.schedule=owner.schedule.filter(s=>s.id!==id);
-      else data.commitments=data.commitments.filter(x=>x.id!==id);
-      closeModal();renderAll();
-    }
-  };
-}
-
-function openChildForm(c=null){
-  const isEdit=!!c;
-  modal(`<h2>${isEdit?"✏️ Modifica Bambino":"➕ Inserisci Bambino"}</h2>
-  <label>Nome e Cognome</label><input id="cName" value="${c?esc(c.name):""}">
-  <div class="row3">
-    <div><label>Colore</label><select id="cColor">${COLORS.map(col=>`<option value="${col}" ${c&&c.color===col?"selected":""}>${col}</option>`).join("")}</select></div>
-    <div><label>Tariffa oraria (€)</label><input id="cRate" type="number" step="0.5" value="${c?c.rate||20:20}"></div>
-    <div><label>Data di nascita</label><input id="cBirth" type="date" value="${c?c.birthDate||"":""}"></div>
-  </div>
-  <div class="row2">
-    <div><label>Scuola</label><input id="cSchool" placeholder="Es. Scuola Elementare Manzoni" value="${c?esc(c.school||""):""}"></div>
-    <div><label>Classe</label><input id="cGrade" placeholder="Es. 3ª Elementare / 1ª Media" value="${c?esc(c.grade||""):""}"></div>
-  </div>
-  <div class="row2">
-    <div><label>Luogo predefinito</label><select id="cLocation"><option value="casa" ${c&&c.location==="studio"?"":"selected"}>🏠 A casa</option><option value="studio" ${c&&c.location==="studio"?"selected":""}>🏢 In studio</option></select></div>
-    <div><label>Tipologia orario</label><select id="cFixed"><option value="true" ${c&&c.fixed===false?"":"selected"}>📅 Fisso (tutte le settimane)</option><option value="false" ${c&&c.fixed===false?"selected":""}>🔄 Occasionale / Variabile</option></select></div>
-  </div>
-  <label>📌 Difficoltà / Obiettivi / Note iniziali</label><textarea id="cDiff" placeholder="Es. Difficoltà in matematica, dislessia, bisogno di metodo di studio...">${c?esc(c.difficulties||""):""}</textarea>
-  <div class="actions"><button class="primary" id="saveChild">Salva</button><button id="cancelModal">Annulla</button></div>`);
-  
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveChild").onclick=()=>{
-    const name=document.getElementById("cName").value.trim();
-    if(!name){alert("Inserisci il nome.");return}
-    const color=document.getElementById("cColor").value;
-    const rate=Number(document.getElementById("cRate").value)||0;
-    const birthDate=document.getElementById("cBirth").value;
-    const school=document.getElementById("cSchool").value.trim();
-    const grade=document.getElementById("cGrade").value.trim();
-    const location=document.getElementById("cLocation").value;
-    const fixed=document.getElementById("cFixed").value==="true";
-    const difficulties=document.getElementById("cDiff").value.trim();
-
-    if(isEdit){
-      c.name=name;c.color=color;c.rate=rate;c.birthDate=birthDate;c.school=school;c.grade=grade;c.location=location;c.fixed=fixed;c.difficulties=difficulties;
-    } else {
-      const newC={id:uid(),name,color,rate,birthDate,school,grade,location,fixed,difficulties,schedule:[]};
-      data.children.push(newC);selectedChildId=newC.id;
-    }
-    closeModal();renderAll();
-  };
-}
-
-function renderMoney(){
-  document.getElementById("weekPlanned").textContent=fmtHours(totalPlannedWeekHours());
-  document.getElementById("weekActual").textContent=fmtHours(totalActualWeekHours());
-  let mTotal=0,mReceived=0;
-  data.children.forEach(c=>{const m=childMonthlyMoney(c.id);mTotal+=m.total;mReceived+=m.received});
-  document.getElementById("monthlyTotal").textContent=euro(mTotal);
-  document.getElementById("received").textContent=euro(mReceived);
-  document.getElementById("due").textContent=euro(mTotal-mReceived);
-
-  const potentialEl = document.getElementById("monthlyPotential");
-  const potentialVal = calculateMonthlyPotential();
-  if (potentialVisible) {
-    potentialEl.textContent = euro(potentialVal);
-    potentialEl.style.filter = "none";
-  } else {
-    potentialEl.textContent = "••••••";
-    potentialEl.style.filter = "blur(4px)";
-  }
-
-  const rows=data.children.map(c=>{
-    const cm=childMoney(c.id),m=childMonthlyMoney(c.id);
-    return `<tr><td><b><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</b><br><small class="muted">${esc(c.school||"")}</small></td><td>${euro(c.rate||0)}/h</td><td>${fmtHours(cm.paidHours)}</td><td>${fmtHours(cm.unpaidHours)}</td><td><b>${euro(m.total)}</b></td><td><span class="badge ${m.due<=0?"paid":"unpaid"}">${m.due<=0?"Saldato":"Da ricevere: "+euro(m.due)}</span></td></tr>`;
+  let html = '<div class="a-head">Ora</div>'+DAYS.map(function(day){
+    return '<div class="a-head">'+day+'</div>';
   }).join("");
-  document.getElementById("moneyTable").innerHTML=`<table><tr><th>Bambino</th><th>Tariffa</th><th>Ore pagate</th><th>Ore non pagate</th><th>Totale Mese</th><th>Stato</th></tr>${rows||'<tr><td colspan="6" class="empty">Nessun bambino inserito.</td></tr>'}</table>`;
+
+  const av=getAvailability();
+  const minHour=Math.floor(Math.min.apply(null,av.map(function(x){return toMinutes(x.start);}))/60);
+  const maxHour=Math.ceil(Math.max.apply(null,av.map(function(x){return toMinutes(x.end);}))/60);
+  for(let hour=minHour;hour<maxHour;hour++){
+    for(let half=0;half<2;half++){
+      const time = String(hour).padStart(2,"0")+":"+(half===0?"00":"30");
+      const slotStart = toMinutes(time);
+      const slotEnd = slotStart + 30;
+
+      html += '<div class="time">'+(half===0?time:"")+'</div>';
+
+      for(let day=0;day<6;day++){
+        const available=isWithinAvailability(day,time,addMinutes(time,30));
+        if(!available){ html += '<div class="slot" style="background:#f3f3f3;opacity:.45"></div>'; continue; }
+        const events = [];
+
+        data.children.forEach(function(child){
+          activeSchedule(child).forEach(function(item){
+            const eventStart = toMinutes(item.start);
+            const eventEnd = toMinutes(item.end);
+            // L'evento occupa ogni slot che si sovrappone alla sua durata.
+            if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+              events.push({
+                name:child.name,
+                start:item.start,
+                end:item.end,
+                color:child.color,
+                type:"child"
+              });
+            }
+          });
+        });
+
+        data.commitments.forEach(function(item){
+          const eventStart = toMinutes(item.start);
+          const eventEnd = toMinutes(item.end);
+          if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+            events.push({
+              name:item.name,
+              start:item.start,
+              end:item.end,
+              color:item.color,
+              type:"commitment"
+            });
+          }
+        });
+
+        if(events.length){
+          const event = events[0];
+          const showText = slotStart === toMinutes(event.start);
+          html += '<div class="slot" data-day="'+day+'" data-time="'+time+'">'+
+            '<div class="event" style="--event:'+event.color+'">'+
+            (showText
+              ? '<b>'+escapeHtml(event.name)+'</b><br>'+event.start+'–'+event.end
+              : '&nbsp;')+
+            '</div></div>';
+        }else{
+          html += '<div class="slot free" data-day="'+day+'" data-time="'+time+'">'+
+            '<span style="font-size:10px;color:#68a87c;padding:4px;display:block">LIBERO</span></div>';
+        }
+      }
+    }
+  }
+
+  document.getElementById("agendaGrid").innerHTML = html;
+
+  document.querySelectorAll(".slot.free").forEach(function(slot){
+    slot.addEventListener("click",function(){
+      openCommitmentForm(Number(slot.dataset.day),slot.dataset.time);
+    });
+  });
+}
+function addMinutes(time,minutes){
+  const total = toMinutes(time)+minutes;
+  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 }
 
-document.getElementById("togglePotential").onclick = () => {
-  potentialVisible = !potentialVisible;
-  document.getElementById("togglePotential").textContent = potentialVisible ? "🙈" : "👁️";
-  renderMoney();
-};
+function openCommitmentForm(day,start){
+  const defaultDay = typeof day==="number" ? day : 0;
+  const defaultStart = start || "08:00";
 
-function modal(html){const m=document.getElementById("modal"),b=document.getElementById("modalContent");b.innerHTML=html;m.classList.add("show")}
-function closeModal(){document.getElementById("modal").classList.remove("show")}
-document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+  showModal(
+    '<h2>➕ Aggiungi all’agenda</h2>'+
+    '<label>Tipo</label><select id="commitmentType">'+
+      '<option value="Bambino occasionale">👤 Bambino</option>'+
+      '<option value="Spostamento">🚗 Spostamento</option>'+
+      '<option value="Studio / Sede">🏢 Studio / Sede</option>'+
+      '<option value="Scuola">🏫 Scuola</option>'+
+      '<option value="Impegno personale">📌 Impegno personale</option>'+
+    '</select>'+
+    '<label>Nome / descrizione</label><input id="commitmentName" placeholder="Es. Riunione, scuola, nome bambino...">'+
+    '<div class="row3">'+
+      '<div><label>Giorno</label><select id="commitmentDay">'+DAYS.map(function(d,i){
+        return '<option value="'+i+'" '+(i===defaultDay?"selected":"")+'>'+d+'</option>';
+      }).join("")+'</select></div>'+
+      '<div><label>Dalle</label><input id="commitmentStart" type="time" value="'+defaultStart+'"></div>'+
+      '<div><label>Alle</label><input id="commitmentEnd" type="time" value="'+addMinutes(defaultStart,60)+'"></div>'+
+    '</div>'+
+    '<div class="actions"><button class="primary" id="saveCommitment">💾 Salva</button><button id="cancelCommitment">Annulla</button></div>'
+  );
 
-document.getElementById("addChild").onclick=()=>openChildForm();
-document.getElementById("addChildHome").onclick=()=>openChildForm();
-document.getElementById("homeAddAppointment").onclick=()=>openAgendaForm();
-document.getElementById("addAgenda").onclick=()=>openAgendaForm();
+  document.getElementById("cancelCommitment").addEventListener("click",closeModal);
+  document.getElementById("saveCommitment").addEventListener("click",function(){
+    const startValue = document.getElementById("commitmentStart").value;
+    const endValue = document.getElementById("commitmentEnd").value;
 
-document.getElementById("exportBackup").onclick=()=>{
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`registro-pedagogico-${new Date().toISOString().slice(0,10)}.json`;a.click();
-};
-document.getElementById("importButton").onclick=()=>document.getElementById("importFile").click();
-document.getElementById("importFile").onchange=e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=evt=>{
-    try{data=normalize(JSON.parse(evt.target.result));renderAll();alert("Backup ripristinato con successo!");}
-    catch{alert("File non valido.");}
+    if(!startValue || !endValue || startValue>=endValue){ alert("Controlla gli orari."); return; }
+    const dayValue=Number(document.getElementById("commitmentDay").value);
+    if(!isWithinAvailability(dayValue,startValue,endValue)){ alert("⚠️ Questo orario è fuori dalla tua disponibilità impostata."); return; }
+    const conflict=overlaps(dayValue,startValue,endValue);
+    if(conflict.length){ const alt=suggestedSlots(dayValue,toMinutes(endValue)-toMinutes(startValue),3); alert("⚠️ Si sovrappone a "+conflict.map(function(x){return x.name+" "+x.start+"–"+x.end;}).join(", ")+".\n\nSlot alternativi: "+(alt.join(" · ")||"nessuno")); return; }
+
+    data.commitments.push({
+      id:uid(),
+      type:document.getElementById("commitmentType").value,
+      name:document.getElementById("commitmentName").value.trim() || document.getElementById("commitmentType").value,
+      day:Number(document.getElementById("commitmentDay").value),
+      start:startValue,
+      end:endValue,
+      color:"#78869b"
+    });
+
+    closeModal();
+    renderAll();
+  });
+}
+
+function openAvailabilityForm(){
+  const av=getAvailability();
+  showModal('<h2>⏰ I miei orari di lavoro</h2><p class="muted">Imposta gli orari in cui vuoi che l’agenda cerchi gli slot liberi.</p>'+DAYS.map(function(d,i){return '<div class="row3"><b>'+d+'</b><input class="av-start" data-day="'+i+'" type="time" value="'+av[i].start+'"><input class="av-end" data-day="'+i+'" type="time" value="'+av[i].end+'"></div>';}).join('')+'<div class="actions"><button class="primary" id="saveAvailability">💾 Salva orari</button><button id="cancelAvailability">Annulla</button></div>');
+  document.getElementById('cancelAvailability').onclick=closeModal;
+  document.getElementById('saveAvailability').onclick=function(){ data.availability=DAYS.map(function(_,i){return {start:document.querySelector('.av-start[data-day="'+i+'"]').value,end:document.querySelector('.av-end[data-day="'+i+'"]').value};}); closeModal(); renderAll(); };
+}
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "backup-registro-pedagogico.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const imported = JSON.parse(reader.result);
+      if(!imported || !Array.isArray(imported.children) || !Array.isArray(imported.sessions)){
+        throw new Error("Backup non valido");
+      }
+      data = {
+        children:imported.children || [],
+        sessions:imported.sessions || [],
+        commitments:imported.commitments || []
+      };
+      selectedChildId = null;
+      renderAll();
+      alert("Backup ripristinato correttamente!");
+    }catch(error){
+      alert("Il file selezionato non è un backup valido.");
+    }
   };
-  r.readAsText(f);
-};
-document.getElementById("clearLocal").onclick=()=>{
-  if(confirm("Vuoi cancellare i dati locali?")){localStorage.removeItem(STORAGE);data=cloneDefault();renderAll();alert("Archivio locale pulito.");}
-};
+  reader.readAsText(file);
+}
 
-initFirebase();
+function printSelectedReport(){
+  const child = childById(selectedChildId);
+  if(!child){
+    alert("Prima seleziona un bambino nella sezione Bambini.");
+    return;
+  }
+
+  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; });
+  const money = childMoney(child.id);
+
+  const report = window.open("","_blank");
+  report.document.write(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report '+escapeHtml(child.name)+'</title>'+
+    '<style>body{font-family:Arial;padding:30px;color:#263858}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #ccc;text-align:left}</style>'+
+    '</head><body>'+
+    '<h1>Registro Pedagogico – '+escapeHtml(child.name)+'</h1>'+
+    '<p><b>Compenso orario:</b> '+euro(child.rate)+'</p>'+
+    '<p><b>Maturato:</b> '+euro(money.earned)+' · <b>Incassato:</b> '+euro(money.received)+' · <b>Da ricevere:</b> '+euro(money.due)+'</p>'+
+    '<h2>Storico sessioni</h2>'+
+    '<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Stato</th><th>Prossima volta</th></tr>'+
+    sessions.map(function(s){
+      return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+escapeHtml(s.subject)+' – '+escapeHtml(s.workType)+'</td><td>'+escapeHtml(s.mood)+'</td><td>'+escapeHtml(s.next)+'</td></tr>';
+    }).join("")+
+    '</table><script>window.onload=function(){window.print()}<\/script></body></html>'
+  );
+  report.document.close();
+}
+
+document.addEventListener("click",function(event){
+  if(event.target && event.target.id==="toggleForecast"){
+    const box=document.getElementById("forecastHidden"); if(box) box.classList.toggle("hidden");
+    event.target.textContent=box && box.classList.contains("hidden")?"💶 Compenso ▾":"💶 Compenso ▴";
+  }
+  if(event.target && event.target.id==="toggleMoneyForecast"){
+    const box=document.getElementById("moneyForecastHidden"); if(box) box.classList.toggle("hidden");
+    event.target.textContent=box && box.classList.contains("hidden")?"💶 Compensi ▾":"💶 Compensi ▴";
+  }
+});
+
+function renderAll(){
+  saveData();
+  renderDashboard();
+  renderChildLists();
+  renderChildDetail();
+  renderAgenda();
+  renderFreeSlots();
+  renderMoney();
+}
+
+document.getElementById("addChild").addEventListener("click",function(){ openChildForm(null); });
+document.getElementById("addChildHome").addEventListener("click",function(){ openChildForm(null); });
+document.getElementById("addCommitment").addEventListener("click",function(){ openCommitmentForm(0,"08:00"); });
+document.getElementById("exportBackup").addEventListener("click",exportBackup);
+document.getElementById("importButton").addEventListener("click",function(){ document.getElementById("importFile").click(); });
+document.getElementById("importFile").addEventListener("change",function(event){ importBackup(event.target.files[0]); });
+document.getElementById("printReport").addEventListener("click",printSelectedReport);
+
+document.getElementById("currentMonth").textContent =
+  new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date());
+
+initFirebase(); 
 </script>
 </body>
 </html>
