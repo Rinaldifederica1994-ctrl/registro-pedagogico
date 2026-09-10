@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro Pedagogico</title>
+<style>
+:root{
+  --primary:#6254a8; --primary2:#ece9ff; --ink:#263858; --muted:#71809a;
+  --bg:#f4f6fb; --card:#ffffff; --line:#dde4ef; --green:#2f9e6f;
+  --red:#d85b66; --orange:#e99a2e;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1,h2,h3,p{margin-top:0}.brand{font-size:24px;font-weight:800;color:var(--primary)}
+.subtitle{font-size:13px;color:var(--muted);margin-top:4px}
+.container{max-width:1500px;margin:auto;padding:18px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:#eaf0f7;color:var(--ink)}
+button:hover{filter:brightness(.98)}
+button.primary{background:var(--primary);color:#fff}
+button.green{background:var(--green);color:#fff}
+button.danger{background:#fde6e8;color:#aa3642}
+.tab.active{background:var(--primary);color:#fff}
+.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 5px 20px rgba(35,52,84,.05)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px}
+.metric{font-size:27px;font-weight:800;margin:8px 0}.muted{color:var(--muted);font-size:13px}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.child-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px;margin:6px 0;border-radius:10px;background:#f8f9fc;border-left:8px solid var(--child);cursor:pointer}
+.child-item.selected{outline:2px solid var(--primary)}
+label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
+input,select,textarea{width:100%;border:1px solid #ccd6e4;border-radius:9px;padding:10px;background:#fff;color:var(--ink)}
+textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800}
+.badge.paid{background:#dff4e8;color:#24744f}.badge.unpaid{background:#fde4e5;color:#b23c46}
+.empty{text-align:center;color:var(--muted);padding:25px}
+details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
+.agenda-wrap{overflow:auto}
+.agenda{display:grid;grid-template-columns:64px repeat(6,1fr);min-width:940px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.a-head{background:#eef1f7;font-weight:800;text-align:center;padding:10px;border-right:1px solid var(--line)}
+.time{background:#fafbfe;padding:7px;border-top:1px solid var(--line);font-size:12px}
+.slot{height:38px;border-left:1px solid var(--line);border-top:1px solid var(--line);position:relative;cursor:pointer}
+.slot.free{background:repeating-linear-gradient(135deg,#fff,#fff 8px,#f2faf5 8px,#f2faf5 16px)}
+.event{position:absolute;inset:2px;border-radius:6px;padding:4px 6px;font-size:11px;border-left:6px solid var(--event);background:color-mix(in srgb,var(--event) 16%,white);overflow:hidden}
+.modal{position:fixed;inset:0;background:rgba(25,36,60,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal.show{display:flex}.modal-box{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px}
+.hidden{display:none}
+.note{background:#fff7d9;padding:10px;border-radius:9px;font-size:13px;margin:8px 0}
+@media(max-width:850px){header{padding:14px}.container{padding:12px}.layout{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">🦋 Registro Pedagogico</div>
+    <div class="subtitle">Semplice, veloce e senza calcoli</div>
+  </div>
+  <div id="currentMonth" class="muted"></div>
+</header>
+
+<div class="container">
+  <nav>
+    <button class="tab active" data-view="home">🏠 Home</button>
+    <button class="tab" data-view="children">👧 Bambini</button>
+    <button class="tab" data-view="agenda">📅 Agenda</button>
+    <button class="tab" data-view="money">💶 Compensi</button>
+    <button class="tab" data-view="backup">💾 Backup</button>
+  </nav>
+
+  <section id="home" class="view active">
+    <div class="cards">
+      <div class="card"><b>🟢 Spazi liberi</b><div class="metric" id="freeSlots">0</div><div class="muted">slot da 30 minuti disponibili</div></div>
+      <div class="card"><b>⏱️ Ore previste settimanali</b><div class="metric" id="weekHours">0 h</div><div class="muted">appuntamenti attivi</div></div>
+      <div class="card"><b>📅 Ore previste mensili</b><div class="metric" id="monthHours">0 h</div><div class="muted">calendario reale del mese</div></div>
+      <div class="card"><b>💶 Quanto dovrei guadagnare questo mese</b><div class="metric" id="monthForecast">€0</div><div class="muted">previsione automatica</div></div>
+    </div>
+
+    <div class="layout">
+      <div class="panel">
+        <div class="section-head"><h3>I miei bambini</h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
+        <div id="homeChildren"></div>
+      </div>
+      <div class="panel">
+        <h3>Ultime sessioni</h3>
+        <div id="recentSessions"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="children" class="view">
+    <div class="layout">
+      <div class="panel">
+        <div class="section-head"><h3>Bambini</h3><button class="primary" id="addChild">➕ Inserisci</button></div>
+        <div id="childrenList"></div>
+      </div>
+      <div class="panel" id="childDetail">
+        <div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agenda" class="view">
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>📅 Agenda settimanale</h2><div class="muted">Clicca su uno spazio libero per aggiungere un'attività</div></div>
+        <button class="primary" id="addCommitment">➕ Aggiungi impegno</button>
+      </div>
+      <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
+    </div>
+  </section>
+
+  <section id="money" class="view">
+    <div class="cards">
+      <div class="card"><b>📅 Quanto dovrei guadagnare questo mese</b><div class="metric" id="moneyForecast">€0</div><div class="muted">previsione mensile</div></div>
+      <div class="card"><b>💰 Maturato</b><div class="metric" id="earned">€0</div><div class="muted">ore realmente svolte</div></div>
+      <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">pagamenti ricevuti</div></div>
+      <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">sessioni ancora non pagate</div></div>
+    </div>
+    <div class="panel"><h3>👤 Dettaglio per bambino</h3><div id="moneyTable"></div></div>
+  </section>
+
+  <section id="backup" class="view">
+    <div class="panel">
+      <h2>💾 Backup e sicurezza</h2>
+      <div class="note">Il programma salva automaticamente i dati sul dispositivo. Fai periodicamente un backup.</div>
+      <div class="actions">
+        <button class="primary" id="exportBackup">📥 Crea backup</button>
+        <button id="importButton">📤 Ripristina backup</button>
+        <input class="hidden" type="file" id="importFile" accept=".json">
+      </div>
+      <hr>
+      <h3>📄 Report PDF</h3>
+      <p class="muted">Seleziona un bambino, poi genera un report stampabile. Dal menu di stampa puoi scegliere “Salva come PDF”.</p>
+      <button id="printReport">📄 Genera report</button>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal"><div class="modal-box" id="modalContent"></div></div>
+
+<script>
+"use strict";
+
+// ===== FIREBASE: ARCHIVIO UNICO SU TUTTI I DISPOSITIVI =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDbntlazrKuldgAARLVP8D9pvjwbodSDRs",
+  authDomain: "registro-pedagogico-8e0a3.firebaseapp.com",
+  projectId: "registro-pedagogico-8e0a3",
+  storageBucket: "registro-pedagogico-8e0a3.firebasestorage.app",
+  messagingSenderId: "1029202221106",
+  appId: "1:1029202221106:web:3a6a50410d322d9a2d042b"
+};
+
+let db = null;
+let firestore = null;
+let cloudLoaded = false;
+
+async function initFirebase(){
+  try{
+    const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
+    firestore = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
+    const app = firebaseApp.initializeApp(firebaseConfig);
+    db = firestore.getFirestore(app);
+
+    const ref = firestore.doc(db,"registroPedagogico","archivio");
+    const snapshot = await firestore.getDoc(ref);
+
+    if(snapshot.exists()){
+      const cloudData = snapshot.data();
+      if(cloudData && Array.isArray(cloudData.children)){
+        data = {
+          children: cloudData.children || [],
+          sessions: cloudData.sessions || [],
+          commitments: cloudData.commitments || []
+        };
+        localStorage.setItem("registroPedagogicoV2",JSON.stringify(data));
+      }
+    }else{
+      await firestore.setDoc(ref,data);
+    }
+
+    cloudLoaded = true;
+    renderAll();
+    console.log("Registro collegato a Firebase");
+  }catch(error){
+    console.error("Firebase non disponibile:",error);
+    alert("⚠️ Archivio online non collegato. I dati restano salvati su questo dispositivo.");
+  }
+}
+
+const DAYS = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+const COLORS = ["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8","#d1a916"];
+
+let data = JSON.parse(localStorage.getItem("registroPedagogicoV2") || '{"children":[],"sessions":[],"commitments":[]}');
+let selectedChildId = null;
+
+function saveData(){
+  localStorage.setItem("registroPedagogicoV2", JSON.stringify(data));
+
+  // Quando Firebase è pronto, salva automaticamente anche nell'archivio unico online.
+  if(cloudLoaded && db && firestore){
+    firestore.setDoc(
+      firestore.doc(db,"registroPedagogico","archivio"),
+      {
+        children:data.children || [],
+        sessions:data.sessions || [],
+        commitments:data.commitments || []
+      }
+    ).catch(function(error){
+      console.error("Errore salvataggio Firebase:",error);
+    });
+  }
+}
+
+function uid(){
+  return "id_" + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+function euro(value){
+  return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(value)||0);
+}
+
+function toMinutes(time){
+  const parts = String(time || "00:00").split(":").map(Number);
+  return parts[0]*60 + parts[1];
+}
+
+function durationHours(start,end){
+  return Math.max(0,(toMinutes(end)-toMinutes(start))/60);
+}
+
+function formatHours(value){
+  const h = Math.floor(value);
+  const m = Math.round((value-h)*60);
+  if(m===0) return h + " h";
+  if(h===0) return m + " min";
+  return h + " h " + m + " min";
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g,function(ch){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch];
+  });
+}
+
+function childById(id){
+  return data.children.find(function(c){ return c.id===id; });
+}
+
+function activeSchedule(child){
+  if(child.fixed===false && child.active===false) return [];
+  return Array.isArray(child.schedule) ? child.schedule : [];
+}
+
+function weekHours(){
+  return data.children.reduce(function(total,child){
+    return total + activeSchedule(child).reduce(function(sum,item){
+      return sum + durationHours(item.start,item.end);
+    },0);
+  },0);
+}
+
+function occurrencesInMonth(dayIndex){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const days = new Date(year,month+1,0).getDate();
+  let count = 0;
+
+  for(let d=1; d<=days; d++){
+    const jsDay = new Date(year,month,d).getDay();
+    const index = jsDay===0 ? 6 : jsDay-1;
+    if(index===dayIndex) count++;
+  }
+  return count;
+}
+
+function monthHours(){
+  return data.children.reduce(function(total,child){
+    return total + activeSchedule(child).reduce(function(sum,item){
+      return sum + durationHours(item.start,item.end)*occurrencesInMonth(item.day);
+    },0);
+  },0);
+}
+
+function monthlyForecast(){
+  return data.children.reduce(function(total,child){
+    const childTotal = activeSchedule(child).reduce(function(sum,item){
+      return sum + durationHours(item.start,item.end)*occurrencesInMonth(item.day)*(Number(child.rate)||0);
+    },0);
+    return total + childTotal;
+  },0);
+}
+
+function childMoney(childId){
+  const child = childById(childId);
+  const sessions = data.sessions.filter(function(s){ return s.childId===childId; });
+  const rate = Number(child ? child.rate : 0);
+
+  let earned = 0;
+  let received = 0;
+
+  sessions.forEach(function(session){
+    const amount = durationHours(session.start,session.end)*rate;
+    earned += amount;
+    if(session.paid===true) received += amount;
+  });
+
+  return {earned:earned,received:received,due:earned-received};
+}
+
+function setView(name){
+  document.querySelectorAll(".view").forEach(function(view){ view.classList.remove("active"); });
+  document.querySelectorAll(".tab").forEach(function(tab){ tab.classList.remove("active"); });
+  document.getElementById(name).classList.add("active");
+  document.querySelector('.tab[data-view="'+name+'"]').classList.add("active");
+  renderAll();
+}
+
+document.querySelectorAll(".tab").forEach(function(tab){
+  tab.addEventListener("click",function(){ setView(tab.dataset.view); });
+});
+
+function renderChildLists(){
+  const html = data.children.length ? data.children.map(function(child){
+    return '<div class="child-item '+(selectedChildId===child.id?"selected":"")+'" style="--child:'+child.color+'" data-child="'+child.id+'">'+
+      '<span><b>'+escapeHtml(child.name)+'</b><br><small class="muted">'+(child.fixed===false?"Non fisso":"Fisso")+'</small></span>'+
+      '<span>'+euro(child.rate)+'/h</span></div>';
+  }).join("") : '<div class="empty">Ancora nessun bambino.</div>';
+
+  document.getElementById("childrenList").innerHTML = html;
+  document.getElementById("homeChildren").innerHTML = html;
+
+  document.querySelectorAll("[data-child]").forEach(function(el){
+    el.addEventListener("click",function(){
+      selectedChildId = el.dataset.child;
+      renderAll();
+    });
+  });
+}
+
+function renderDashboard(){
+  document.getElementById("weekHours").textContent = formatHours(weekHours());
+  document.getElementById("monthHours").textContent = formatHours(monthHours());
+  document.getElementById("monthForecast").textContent = euro(monthlyForecast());
+
+  let occupied = 0;
+  data.children.forEach(function(child){
+    activeSchedule(child).forEach(function(item){
+      occupied += Math.ceil(durationHours(item.start,item.end)*2);
+    });
+  });
+  data.commitments.forEach(function(item){
+    occupied += Math.ceil(durationHours(item.start,item.end)*2);
+  });
+
+  const totalSlots = 6*26;
+  document.getElementById("freeSlots").textContent = Math.max(0,totalSlots-occupied);
+
+  const sessions = data.sessions.slice().sort(function(a,b){
+    return String(b.date).localeCompare(String(a.date));
+  }).slice(0,8);
+
+  if(!sessions.length){
+    document.getElementById("recentSessions").innerHTML = '<div class="empty">Nessuna sessione salvata.</div>';
+    return;
+  }
+
+  let html = '<table><tr><th>Bambino</th><th>Data</th><th>Ore</th><th>Pagamento</th></tr>';
+  sessions.forEach(function(session){
+    const child = childById(session.childId);
+    html += '<tr><td>'+escapeHtml(child ? child.name : "Eliminato")+'</td>'+
+      '<td>'+escapeHtml(session.date)+'</td>'+
+      '<td>'+formatHours(durationHours(session.start,session.end))+'</td>'+
+      '<td>'+(session.paid
+        ? '<span class="badge paid">Pagato</span>'
+        : '<button class="green mark-paid" data-session="'+session.id+'">🟢 Segna pagato</button>')+
+      '</td></tr>';
+  });
+  html += '</table>';
+  document.getElementById("recentSessions").innerHTML = html;
+  bindMarkPaidButtons();
+}
+
+function bindMarkPaidButtons(){
+  document.querySelectorAll(".mark-paid").forEach(function(button){
+    button.addEventListener("click",function(){
+      markSessionPaid(button.dataset.session);
+    });
+  });
+}
+
+function renderMoney(){
+  let totals = {earned:0,received:0,due:0};
+
+  let rows = data.children.map(function(child){
+    const money = childMoney(child.id);
+    totals.earned += money.earned;
+    totals.received += money.received;
+    totals.due += money.due;
+    return '<tr><td>'+escapeHtml(child.name)+'</td><td>'+euro(money.earned)+'</td><td>'+euro(money.received)+'</td><td>'+euro(money.due)+'</td></tr>';
+  }).join("");
+
+  document.getElementById("moneyForecast").textContent = euro(monthlyForecast());
+  document.getElementById("earned").textContent = euro(totals.earned);
+  document.getElementById("received").textContent = euro(totals.received);
+  document.getElementById("due").textContent = euro(totals.due);
+
+  document.getElementById("moneyTable").innerHTML = rows
+    ? '<table><tr><th>Bambino</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>'+rows+'</table>'
+    : '<div class="empty">Ancora nessun bambino.</div>';
+}
+
+function optionList(values){
+  return values.map(function(value){
+    return '<option value="'+escapeHtml(value)+'">'+escapeHtml(value)+'</option>';
+  }).join("") + '<option value="Altro">Altro</option>';
+}
+
+function showModal(content){
+  document.getElementById("modalContent").innerHTML = content;
+  document.getElementById("modal").classList.add("show");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.remove("show");
+}
+
+document.getElementById("modal").addEventListener("click",function(event){
+  if(event.target.id==="modal") closeModal();
+});
+
+function openChildForm(child){
+  const c = child || {};
+  showModal(
+    '<h2>'+(child?"✏️ Modifica bambino":"➕ Inserisci bambino")+'</h2>'+
+    '<label>Nome del bambino</label><input id="childName" value="'+escapeHtml(c.name||"")+'">'+
+    '<div class="row2">'+
+      '<div><label>Compenso orario (€)</label><input id="childRate" type="number" step="0.01" value="'+(c.rate||"")+'"></div>'+
+      '<div><label>È fisso ogni settimana?</label><select id="childFixed"><option value="true" '+(c.fixed!==false?"selected":"")+'>Sì</option><option value="false" '+(c.fixed===false?"selected":"")+'>No</option></select></div>'+
+    '</div>'+
+    '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
+    '<h3>📅 Giorni e orari</h3><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno/orario</button>'+
+    '<details><summary><b>Informazioni facoltative</b></summary>'+
+      '<label>Età</label><input id="childAge" value="'+escapeHtml(c.age||"")+'">'+
+      '<label>Classe</label><input id="childClass" value="'+escapeHtml(c.class||"")+'">'+
+      '<label>Scuola</label><input id="childSchool" value="'+escapeHtml(c.school||"")+'">'+
+      '<label>Obiettivi</label><textarea id="childGoals">'+escapeHtml(c.goals||"")+'</textarea>'+
+      '<label>Note</label><textarea id="childNotes">'+escapeHtml(c.notes||"")+'</textarea>'+
+    '</details>'+
+    '<div class="actions"><button class="primary" id="saveChildButton">💾 Salva bambino</button><button id="cancelChildButton">Annulla</button></div>'
+  );
+
+  const rows = (c.schedule && c.schedule.length) ? c.schedule : [{day:0,start:"15:00",end:"16:00"}];
+  rows.forEach(addScheduleRow);
+
+  document.getElementById("addScheduleRow").addEventListener("click",function(){
+    addScheduleRow({day:0,start:"15:00",end:"16:00"});
+  });
+
+  document.getElementById("cancelChildButton").addEventListener("click",closeModal);
+  document.getElementById("saveChildButton").addEventListener("click",function(){
+    saveChild(child ? child.id : null);
+  });
+}
+
+function addScheduleRow(item){
+  const row = document.createElement("div");
+  row.className = "row3 schedule-row";
+  row.innerHTML =
+    '<select class="schedule-day">'+DAYS.map(function(day,index){
+      return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';
+    }).join("")+'</select>'+
+    '<input class="schedule-start" type="time" value="'+item.start+'">'+
+    '<div style="display:flex;gap:5px"><input class="schedule-end" type="time" value="'+item.end+'"><button class="remove-schedule">×</button></div>';
+
+  document.getElementById("scheduleRows").appendChild(row);
+  row.querySelector(".remove-schedule").addEventListener("click",function(){
+    row.remove();
+  });
+}
+
+function saveChild(existingId){
+  const name = document.getElementById("childName").value.trim();
+  if(!name){
+    alert("Inserisci il nome del bambino.");
+    return;
+  }
+
+  const schedule = Array.from(document.querySelectorAll(".schedule-row")).map(function(row){
+    return {
+      day:Number(row.querySelector(".schedule-day").value),
+      start:row.querySelector(".schedule-start").value,
+      end:row.querySelector(".schedule-end").value
+    };
+  }).filter(function(item){
+    return item.start && item.end && item.start<item.end;
+  });
+
+  const old = existingId ? childById(existingId) : null;
+  const child = {
+    id:existingId || uid(),
+    name:name,
+    rate:Number(document.getElementById("childRate").value)||0,
+    fixed:document.getElementById("childFixed").value==="true",
+    active:document.getElementById("childActive").value==="true",
+    schedule:schedule,
+    color:old ? old.color : COLORS[data.children.length % COLORS.length],
+    age:document.getElementById("childAge").value,
+    class:document.getElementById("childClass").value,
+    school:document.getElementById("childSchool").value,
+    goals:document.getElementById("childGoals").value,
+    notes:document.getElementById("childNotes").value
+  };
+
+  if(old) Object.assign(old,child);
+  else data.children.push(child);
+
+  selectedChildId = child.id;
+  closeModal();
+  renderAll();
+}
+
+function renderChildDetail(){
+  const target = document.getElementById("childDetail");
+  const child = childById(selectedChildId);
+
+  if(!child){
+    target.innerHTML = '<div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>';
+    return;
+  }
+
+  const money = childMoney(child.id);
+  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; })
+    .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+
+  target.innerHTML =
+    '<div class="section-head">'+
+      '<div><h2 style="border-left:10px solid '+child.color+';padding-left:10px">'+escapeHtml(child.name)+'</h2>'+
+      '<div class="muted">'+(child.fixed?"Fisso":"Non fisso")+' · '+(child.active?"Attivo":"Non attivo")+' questa settimana</div></div>'+
+      '<div><button id="editChild">✏️ Modifica</button> <button class="danger" id="deleteChild">🗑️ Elimina</button></div>'+
+    '</div>'+
+    '<div class="cards">'+
+      '<div class="card"><b>💰 Maturato</b><div class="metric">'+euro(money.earned)+'</div></div>'+
+      '<div class="card"><b>🟢 Incassato</b><div class="metric">'+euro(money.received)+'</div></div>'+
+      '<div class="card"><b>🔴 Mi deve</b><div class="metric">'+euro(money.due)+'</div></div>'+
+    '</div>'+
+    sessionFormHtml()+
+    '<h3>📚 Storico</h3>'+
+    (sessions.length ? sessionHistoryHtml(sessions) : '<div class="empty">Nessuna sessione salvata.</div>');
+
+  document.getElementById("editChild").addEventListener("click",function(){ openChildForm(child); });
+  document.getElementById("deleteChild").addEventListener("click",function(){ deleteChild(child.id); });
+  document.getElementById("saveSession").addEventListener("click",saveSession);
+  bindMarkPaidButtons();
+  bindDeleteSessionButtons();
+}
+
+function sessionFormHtml(){
+  return '<div class="panel" style="margin:16px 0">'+
+    '<h3>➕ Nuova sessione</h3>'+
+    '<div class="row3">'+
+      '<div><label>Data</label><input id="sessionDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+      '<div><label>Dalle</label><input id="sessionStart" type="time" value="15:00"></div>'+
+      '<div><label>Alle</label><input id="sessionEnd" type="time" value="16:00"></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div><label>😊 Come è oggi?</label><select id="sessionMood">'+optionList(["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])+'</select></div>'+
+      '<div><label>📚 Lavoro di oggi</label><select id="sessionSubject">'+optionList(["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])+'</select></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div><label>🎯 Tipo di lavoro</label><select id="sessionWork">'+optionList(["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])+'</select></div>'+
+      '<div><label>👀 Attenzione</label><select id="sessionAttention">'+optionList(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+'</select></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div><label>🤝 Collaborazione</label><select id="sessionCollaboration">'+optionList(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+'</select></div>'+
+      '<div><label>💶 Pagamento</label><select id="sessionPaid"><option value="true">🟢 Pagato</option><option value="false">🔴 Non pagato</option></select></div>'+
+    '</div>'+
+    '<label>Altro / dettagli</label><input id="sessionOther" placeholder="Scrivi qui se hai scelto Altro">'+
+    '<label>📌 Cose da fare per la prossima volta</label><textarea id="sessionNext" placeholder="Cosa riprendere, preparare o ricordare..."></textarea>'+
+    '<div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div>'+
+  '</div>';
+}
+
+function sessionHistoryHtml(sessions){
+  let html = '<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Pagamento</th><th>Azioni</th></tr>';
+
+  sessions.forEach(function(s){
+    html += '<tr>'+
+      '<td>'+escapeHtml(s.date)+'</td>'+
+      '<td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td>'+
+      '<td>'+escapeHtml(s.subject)+'<br><small>'+escapeHtml(s.workType)+'</small></td>'+
+      '<td>'+(s.paid
+        ? '<span class="badge paid">🟢 Pagato</span>'
+        : '<span class="badge unpaid">🔴 Non pagato</span>')+'</td>'+
+      '<td>'+(s.paid ? '' : '<button class="green mark-paid" data-session="'+s.id+'">🟢 Segna pagato</button> ') +
+      '<button class="danger delete-session" data-session="'+s.id+'">🗑️</button></td>'+
+    '</tr>';
+  });
+
+  return html+'</table>';
+}
+
+function saveSession(){
+  const start = document.getElementById("sessionStart").value;
+  const end = document.getElementById("sessionEnd").value;
+
+  if(!start || !end || start>=end){
+    alert("Controlla gli orari della sessione.");
+    return;
+  }
+
+  function selectValue(id){ return document.getElementById(id).value; }
+
+  const other = document.getElementById("sessionOther").value.trim();
+  function withOther(value){
+    return value==="Altro" && other ? other : value;
+  }
+
+  data.sessions.push({
+    id:uid(),
+    childId:selectedChildId,
+    date:document.getElementById("sessionDate").value,
+    start:start,
+    end:end,
+    mood:withOther(selectValue("sessionMood")),
+    subject:withOther(selectValue("sessionSubject")),
+    workType:withOther(selectValue("sessionWork")),
+    attention:withOther(selectValue("sessionAttention")),
+    collaboration:withOther(selectValue("sessionCollaboration")),
+    next:document.getElementById("sessionNext").value,
+    paid:selectValue("sessionPaid")==="true"
+  });
+
+  renderAll();
+}
+
+function markSessionPaid(sessionId){
+  const session = data.sessions.find(function(s){ return s.id===sessionId; });
+  if(!session) return;
+
+  if(confirm("Confermi che questa sessione è stata pagata?")){
+    session.paid = true;
+    session.paidDate = new Date().toISOString().slice(0,10);
+    renderAll();
+  }
+}
+
+function bindDeleteSessionButtons(){
+  document.querySelectorAll(".delete-session").forEach(function(button){
+    button.addEventListener("click",function(){
+      const id = button.dataset.session;
+      if(confirm("Eliminare questa sessione?")){
+        data.sessions = data.sessions.filter(function(s){ return s.id!==id; });
+        renderAll();
+      }
+    });
+  });
+}
+
+function deleteChild(childId){
+  if(!confirm("Eliminare il bambino e tutto il suo storico?")) return;
+  data.children = data.children.filter(function(c){ return c.id!==childId; });
+  data.sessions = data.sessions.filter(function(s){ return s.childId!==childId; });
+  selectedChildId = null;
+  renderAll();
+}
+
+function renderAgenda(){
+  let html = '<div class="a-head">Ora</div>'+DAYS.map(function(day){
+    return '<div class="a-head">'+day+'</div>';
+  }).join("");
+
+  for(let hour=8;hour<21;hour++){
+    for(let half=0;half<2;half++){
+      const time = String(hour).padStart(2,"0")+":"+(half===0?"00":"30");
+      const slotStart = toMinutes(time);
+      const slotEnd = slotStart + 30;
+
+      html += '<div class="time">'+(half===0?time:"")+'</div>';
+
+      for(let day=0;day<6;day++){
+        const events = [];
+
+        data.children.forEach(function(child){
+          activeSchedule(child).forEach(function(item){
+            const eventStart = toMinutes(item.start);
+            const eventEnd = toMinutes(item.end);
+            // L'evento occupa ogni slot che si sovrappone alla sua durata.
+            if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+              events.push({
+                name:child.name,
+                start:item.start,
+                end:item.end,
+                color:child.color,
+                type:"child"
+              });
+            }
+          });
+        });
+
+        data.commitments.forEach(function(item){
+          const eventStart = toMinutes(item.start);
+          const eventEnd = toMinutes(item.end);
+          if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+            events.push({
+              name:item.name,
+              start:item.start,
+              end:item.end,
+              color:item.color,
+              type:"commitment"
+            });
+          }
+        });
+
+        if(events.length){
+          const event = events[0];
+          const showText = slotStart === toMinutes(event.start);
+          html += '<div class="slot" data-day="'+day+'" data-time="'+time+'">'+
+            '<div class="event" style="--event:'+event.color+'">'+
+            (showText
+              ? '<b>'+escapeHtml(event.name)+'</b><br>'+event.start+'–'+event.end
+              : '&nbsp;')+
+            '</div></div>';
+        }else{
+          html += '<div class="slot free" data-day="'+day+'" data-time="'+time+'">'+
+            '<span style="font-size:10px;color:#68a87c;padding:4px;display:block">LIBERO</span></div>';
+        }
+      }
+    }
+  }
+
+  document.getElementById("agendaGrid").innerHTML = html;
+
+  document.querySelectorAll(".slot.free").forEach(function(slot){
+    slot.addEventListener("click",function(){
+      openCommitmentForm(Number(slot.dataset.day),slot.dataset.time);
+    });
+  });
+}
+function addMinutes(time,minutes){
+  const total = toMinutes(time)+minutes;
+  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+}
+
+function openCommitmentForm(day,start){
+  const defaultDay = typeof day==="number" ? day : 0;
+  const defaultStart = start || "08:00";
+
+  showModal(
+    '<h2>➕ Aggiungi all’agenda</h2>'+
+    '<label>Tipo</label><select id="commitmentType">'+
+      '<option value="Bambino occasionale">👤 Bambino</option>'+
+      '<option value="Spostamento">🚗 Spostamento</option>'+
+      '<option value="Studio / Sede">🏢 Studio / Sede</option>'+
+      '<option value="Scuola">🏫 Scuola</option>'+
+      '<option value="Impegno personale">📌 Impegno personale</option>'+
+    '</select>'+
+    '<label>Nome / descrizione</label><input id="commitmentName" placeholder="Es. Riunione, scuola, nome bambino...">'+
+    '<div class="row3">'+
+      '<div><label>Giorno</label><select id="commitmentDay">'+DAYS.map(function(d,i){
+        return '<option value="'+i+'" '+(i===defaultDay?"selected":"")+'>'+d+'</option>';
+      }).join("")+'</select></div>'+
+      '<div><label>Dalle</label><input id="commitmentStart" type="time" value="'+defaultStart+'"></div>'+
+      '<div><label>Alle</label><input id="commitmentEnd" type="time" value="'+addMinutes(defaultStart,60)+'"></div>'+
+    '</div>'+
+    '<div class="actions"><button class="primary" id="saveCommitment">💾 Salva</button><button id="cancelCommitment">Annulla</button></div>'
+  );
+
+  document.getElementById("cancelCommitment").addEventListener("click",closeModal);
+  document.getElementById("saveCommitment").addEventListener("click",function(){
+    const startValue = document.getElementById("commitmentStart").value;
+    const endValue = document.getElementById("commitmentEnd").value;
+
+    if(!startValue || !endValue || startValue>=endValue){
+      alert("Controlla gli orari.");
+      return;
+    }
+
+    data.commitments.push({
+      id:uid(),
+      type:document.getElementById("commitmentType").value,
+      name:document.getElementById("commitmentName").value.trim() || document.getElementById("commitmentType").value,
+      day:Number(document.getElementById("commitmentDay").value),
+      start:startValue,
+      end:endValue,
+      color:"#78869b"
+    });
+
+    closeModal();
+    renderAll();
+  });
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "backup-registro-pedagogico.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const imported = JSON.parse(reader.result);
+      if(!imported || !Array.isArray(imported.children) || !Array.isArray(imported.sessions)){
+        throw new Error("Backup non valido");
+      }
+      data = {
+        children:imported.children || [],
+        sessions:imported.sessions || [],
+        commitments:imported.commitments || []
+      };
+      selectedChildId = null;
+      renderAll();
+      alert("Backup ripristinato correttamente!");
+    }catch(error){
+      alert("Il file selezionato non è un backup valido.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function printSelectedReport(){
+  const child = childById(selectedChildId);
+  if(!child){
+    alert("Prima seleziona un bambino nella sezione Bambini.");
+    return;
+  }
+
+  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; });
+  const money = childMoney(child.id);
+
+  const report = window.open("","_blank");
+  report.document.write(
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report '+escapeHtml(child.name)+'</title>'+
+    '<style>body{font-family:Arial;padding:30px;color:#263858}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #ccc;text-align:left}</style>'+
+    '</head><body>'+
+    '<h1>Registro Pedagogico – '+escapeHtml(child.name)+'</h1>'+
+    '<p><b>Compenso orario:</b> '+euro(child.rate)+'</p>'+
+    '<p><b>Maturato:</b> '+euro(money.earned)+' · <b>Incassato:</b> '+euro(money.received)+' · <b>Da ricevere:</b> '+euro(money.due)+'</p>'+
+    '<h2>Storico sessioni</h2>'+
+    '<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Stato</th><th>Prossima volta</th></tr>'+
+    sessions.map(function(s){
+      return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+escapeHtml(s.subject)+' – '+escapeHtml(s.workType)+'</td><td>'+escapeHtml(s.mood)+'</td><td>'+escapeHtml(s.next)+'</td></tr>';
+    }).join("")+
+    '</table><script>window.onload=function(){window.print()}<\/script></body></html>'
+  );
+  report.document.close();
+}
+
+function renderAll(){
+  saveData();
+  renderDashboard();
+  renderChildLists();
+  renderChildDetail();
+  renderAgenda();
+  renderMoney();
+}
+
+document.getElementById("addChild").addEventListener("click",function(){ openChildForm(null); });
+document.getElementById("addChildHome").addEventListener("click",function(){ openChildForm(null); });
+document.getElementById("addCommitment").addEventListener("click",function(){ openCommitmentForm(0,"08:00"); });
+document.getElementById("exportBackup").addEventListener("click",exportBackup);
+document.getElementById("importButton").addEventListener("click",function(){ document.getElementById("importFile").click(); });
+document.getElementById("importFile").addEventListener("change",function(event){ importBackup(event.target.files[0]); });
+document.getElementById("printReport").addEventListener("click",printSelectedReport);
+
+document.getElementById("currentMonth").textContent =
+  new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date());
+
+renderAll();
+initFirebase();
+</script>
+</body>
+</html>
