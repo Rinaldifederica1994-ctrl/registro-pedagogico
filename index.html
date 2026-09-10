@@ -115,9 +115,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
   <div class="cards">
     <div class="card"><b>⏱️ Ore previste questa settimana</b><div class="metric" id="weekPlanned">0 h</div><div class="muted">tutti i bambini attivi</div></div>
     <div class="card"><b>✅ Ore effettive questa settimana</b><div class="metric" id="weekActual">0 h</div><div class="muted">sessioni realmente svolte</div></div>
-    <div class="card"><b>💰 Maturato</b><div class="metric" id="earned">€0,00</div><div class="muted">ore realmente svolte</div></div>
-    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">ore già pagate</div></div>
-    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">ore non ancora pagate</div></div>
+    <div class="card"><b>💶 Compenso mensile totale</b><div class="metric" id="monthlyTotal">€0,00</div><div class="muted">mese in corso</div></div>
+    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">mese in corso</div></div>
+    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">mese in corso</div></div>
   </div>
   <div class="panel" style="margin-top:16px"><h3>Dettaglio per bambino</h3><div class="table-wrap" id="moneyTable"></div></div>
 </section>
@@ -309,6 +309,31 @@ function totalPlannedWeekHours(){
 function totalActualWeekHours(){
   return data.children.reduce((t,c)=>t+childActualWeekHours(c.id),0);
 }
+function dateInCurrentMonth(value){
+  if(!value)return false;
+  const p=String(value).split("-").map(Number);
+  const d=new Date(p[0],p[1]-1,p[2]);
+  const now=new Date();
+  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+}
+function childActualMonthHours(id){
+  return data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date))
+    .reduce((t,s)=>t+duration(s.start,s.end),0);
+}
+function childUnpaidMonthHours(id){
+  return data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date)&&!s.paid)
+    .reduce((t,s)=>t+duration(s.start,s.end),0);
+}
+function childMonthlyMoney(id){
+  const c=child(id),rate=Number(c?.rate)||0;
+  let total=0,received=0;
+  data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date)).forEach(s=>{
+    const amount=duration(s.start,s.end)*rate;
+    total+=amount;
+    if(s.paid) received+=amount;
+  });
+  return {total,received,due:total-received};
+}
 function childMoney(id){
   const c=child(id),rate=Number(c?.rate)||0;let earned=0,received=0,unpaidHours=0;
   data.sessions.filter(s=>s.childId===id).forEach(s=>{
@@ -319,50 +344,69 @@ function childMoney(id){
   return {earned,received,due:earned-received,paidHours:childPaidHours(id),unpaidHours};
 }
 function sessionOptions(values){
-  return values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")+'<option value="Altro">Altro</option>';
+  return values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")+'<option value="Altro">✏️ Altro...</option>';
+}
+function sessionSelect(id,label,values){
+  return `<div><label>${label}</label>
+    <select id="${id}" onchange="toggleOtherField('${id}')">${sessionOptions(values)}</select>
+    <input id="${id}Other" style="display:none;margin-top:8px" placeholder="Scrivi tu..." />
+  </div>`;
+}
+function toggleOtherField(id){
+  const select=document.getElementById(id);
+  const input=document.getElementById(id+"Other");
+  if(!select||!input)return;
+  input.style.display=select.value==="Altro"?"block":"none";
+  if(select.value==="Altro") input.focus();
+}
+function sessionValue(id){
+  const select=document.getElementById(id);
+  const input=document.getElementById(id+"Other");
+  if(select.value==="Altro"){
+    const custom=input.value.trim();
+    if(!custom){alert("Hai scelto Altro: scrivi la voce personalizzata.");throw new Error("custom value missing")}
+    return custom;
+  }
+  return select.value;
 }
 function renderChildDetail(){
   const target=document.getElementById("childDetail"),c=child(selectedChildId);
   if(!c){target.innerHTML='<div class="empty">Seleziona un bambino.</div>';return}
-  const money=childMoney(c.id);
-  const planned=childPlannedWeekHours(c),actual=childActualWeekHours(c.id);
   const sessions=data.sessions.filter(s=>s.childId===c.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   target.innerHTML=`
     <div class="section-head"><div><h2 style="border-left:9px solid ${c.color};padding-left:10px">${esc(c.name)}</h2><div class="muted">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}${c.fixed===false?" · "+(c.active===false?"Non attivo questa settimana":"Attivo questa settimana"):""}</div></div><div><button id="editChild">✏️ Modifica</button><button class="danger" id="deleteChild">🗑️</button></div></div>
-    <div class="cards">
-      <div class="card"><b>⏱️ Ore previste</b><div class="metric">${formatHours(planned)}</div><div class="muted">questa settimana</div></div>
-      <div class="card"><b>✅ Ore effettive</b><div class="metric">${formatHours(actual)}</div><div class="muted">questa settimana</div></div>
-      <div class="card"><b>📌 Da fare</b><div class="metric">${formatHours(Math.max(0,planned-actual))}</div><div class="muted">differenza settimanale</div></div>
-    </div>
-    <div class="card" style="margin-top:16px"><div class="section-head"><b>💶 Ore e pagamenti</b><button id="toggleChildMoney">Mostra</button></div>
-      <div id="childMoneyBox" class="money-hidden"><div class="cards">
-        <div><b>Compenso orario</b><div class="metric">${euro(c.rate)}/h</div></div>
-        <div><b>Ore pagate</b><div class="metric">${formatHours(money.paidHours)}</div></div>
-        <div><b>Ore da pagare</b><div class="metric">${formatHours(money.unpaidHours)}</div></div>
-        <div><b>Maturato</b><div class="metric">${euro(money.earned)}</div></div>
-        <div><b>Incassato</b><div class="metric">${euro(money.received)}</div></div>
-        <div><b>Mi deve</b><div class="metric">${euro(money.due)}</div></div>
-      </div></div>
-    </div>
     ${sessionFormHtml(c)}
     <h3 style="margin-top:20px">📚 Storico sessioni</h3>
     <div class="table-wrap">${sessions.length?historyHtml(sessions):'<div class="empty">Nessuna sessione salvata.</div>'}</div>`;
   document.getElementById("editChild").onclick=()=>openChildForm(c);
   document.getElementById("deleteChild").onclick=()=>deleteChild(c.id);
-  document.getElementById("toggleChildMoney").onclick=()=>{const box=document.getElementById("childMoneyBox"),b=document.getElementById("toggleChildMoney");box.classList.toggle("money-hidden");b.textContent=box.classList.contains("money-hidden")?"Mostra":"Nascondi"};
   document.getElementById("saveSession").onclick=saveSession;
   document.querySelectorAll(".mark-paid").forEach(b=>b.onclick=()=>markPaid(b.dataset.id));
   document.querySelectorAll(".delete-session").forEach(b=>b.onclick=()=>deleteSession(b.dataset.id));
 }
 function sessionFormHtml(c){return `<div class="panel" style="margin-top:16px"><h3>➕ Nuova sessione</h3>
 <div class="row3"><div><label>Data</label><input id="sDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label>Dalle</label><input id="sStart" type="time" value="15:00"></div><div><label>Alle</label><input id="sEnd" type="time" value="16:00"></div></div>
-<div class="row2"><div><label>😊 Come è oggi?</label><select id="sMood">${sessionOptions(["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])}</select></div><div><label>📚 Lavoro di oggi</label><select id="sSubject">${sessionOptions(["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])}</select></div></div>
-<div class="row2"><div><label>🎯 Tipo di lavoro</label><select id="sWork">${sessionOptions(["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])}</select></div><div><label>👀 Attenzione</label><select id="sAttention">${sessionOptions(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</select></div></div>
-<div class="row2"><div><label>🤝 Collaborazione</label><select id="sCollaboration">${sessionOptions(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</select></div><div><label>💶 Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
-<div class="row2"><div><label>📍 Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>✏️ Altro (solo se serve)</label><input id="sOther" placeholder="Scrivi qui la tua voce personalizzata"></div></div>
+<div class="row2">${sessionSelect("sMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])}${sessionSelect("sSubject","📚 Lavoro di oggi",["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])}</div>
+<div class="row2">${sessionSelect("sWork","🎯 Tipo di lavoro",["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])}${sessionSelect("sAttention","👀 Attenzione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</div>
+<div class="row2">${sessionSelect("sCollaboration","🤝 Collaborazione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}<div><label>💶 Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
+<div class="row2"><div><label>📍 Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div></div>
 <label>📝 Note / comportamento</label><textarea id="sNotes"></textarea>
 <label>📌 Cose da fare per la prossima volta</label><textarea id="sNext"></textarea>
 <div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div></div>`}
+function saveSession(){
+  const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
+  if(!selectedChildId||!start||!end||start>=end){alert("Controlla gli orari.");return}
+  let mood,subject,workType,attention,collaboration;
+  try{
+    mood=sessionValue("sMood");
+    subject=sessionValue("sSubject");
+    workType=sessionValue("sWork");
+    attention=sessionValue("sAttention");
+    collaboration=sessionValue("sCollaboration");
+  }catch(e){return}
+  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,mood,subject,workType,attention,collaboration,notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
+  renderAll();
+}
 function historyHtml(list){return `<table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th></th></tr>${list.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.start)}–${esc(s.end)}</td><td>${formatHours(duration(s.start,s.end))}</td><td>${esc(s.subject||"")}<br><small>${esc(s.workType||"")}</small></td><td>${locationIcon(s.location||"casa")}</td><td>${s.paid?'<span class="badge paid">Pagato</span>':'<span class="badge unpaid">Non pagato</span>'}</td><td>${!s.paid?`<button class="green mark-paid" data-id="${s.id}">✓ Pagato</button>`:""} <button class="danger delete-session" data-id="${s.id}">🗑️</button></td></tr>`).join("")}</table>`}
 function saveSession(){
   const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
@@ -467,18 +511,31 @@ function openAvailability(){
   document.getElementById("saveAvailability").onclick=()=>{const s=document.getElementById("avStart").value,e=document.getElementById("avEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}data.availability={start:s,end:e};closeModal();renderAll()};
 }
 function renderMoney(){
-  let earned=0,received=0;
+  let monthlyTotal=0,received=0,due=0;
   const rows=data.children.map(c=>{
-    const m=childMoney(c.id),planned=childPlannedWeekHours(c),actual=childActualWeekHours(c.id);
-    earned+=m.earned;received+=m.received;
-    return `<tr><td><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</td><td>${formatHours(planned)}</td><td>${formatHours(actual)}</td><td>${formatHours(Math.max(0,planned-actual))}</td><td>${formatHours(m.paidHours)}</td><td>${formatHours(m.unpaidHours)}</td><td>${euro(m.earned)}</td><td>${euro(m.received)}</td><td>${euro(m.due)}</td></tr>`;
+    const actual=childActualMonthHours(c.id);
+    const unpaid=childUnpaidMonthHours(c.id);
+    const money=childMonthlyMoney(c.id);
+    monthlyTotal+=money.total;
+    received+=money.received;
+    due+=money.due;
+    return `<tr>
+      <td><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</td>
+      <td>${formatHours(actual)}</td>
+      <td>${formatHours(unpaid)}</td>
+    </tr>`;
   }).join("");
+
   document.getElementById("weekPlanned").textContent=formatHours(totalPlannedWeekHours());
   document.getElementById("weekActual").textContent=formatHours(totalActualWeekHours());
-  document.getElementById("earned").textContent=euro(earned);
+  document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
   document.getElementById("received").textContent=euro(received);
-  document.getElementById("due").textContent=euro(earned-received);
-  document.getElementById("moneyTable").innerHTML=rows?`<table><tr><th>Bambino</th><th>Ore previste</th><th>Ore effettive</th><th>Da fare</th><th>Ore pagate</th><th>Ore da pagare</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>${rows}</table>`:'<div class="empty">Ancora nessun dato.</div>';
+  document.getElementById("due").textContent=euro(due);
+
+  document.getElementById("moneyTable").innerHTML=rows
+    ? `<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>${rows}</table>
+       <div class="muted" style="margin-top:10px">I dati della tabella si riferiscono al mese in corso. Quando una sessione viene impostata come <b>Pagata</b>, le relative ore vengono tolte automaticamente da «Ore da pagare».</div>`
+    : '<div class="empty">Ancora nessun dato.</div>';
 }
 
 function modal(html){document.getElementById("modalContent").innerHTML=html;document.getElementById("modal").classList.add("show")}
