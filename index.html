@@ -233,7 +233,8 @@ async function initFirebase() {
     }
 
     cloudLoaded = true;
-    renderAll();
+    ensureUniqueChildColors();
+renderAll();
 
     // L'app viene mostrata SOLO dopo login e caricamento archivio.
     document.body.style.display = "block";
@@ -250,6 +251,34 @@ const DAYS = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
 const COLORS = ["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8","#d1a916"];
 
 let data = JSON.parse(localStorage.getItem("registroPedagogicoV2") || '{"children":[],"sessions":[],"commitments":[]}');
+
+/* Recupera automaticamente lo storico creato con versioni precedenti. */
+function migrateLegacySessions(){
+  if(!Array.isArray(data.children)) data.children=[];
+  if(!Array.isArray(data.sessions)) data.sessions=[];
+  data.sessions.forEach(function(s){
+    if(data.children.some(function(c){return c.id===s.childId;})) return;
+    const legacyName=String(s.childName||s.child||s.name||s.bambino||"").trim().toLowerCase();
+    const match=data.children.find(function(c){
+      return legacyName && String(c.name||"").trim().toLowerCase()===legacyName;
+    });
+    if(match) s.childId=match.id;
+  });
+}
+migrateLegacySessions();
+
+function ensureUniqueChildColors(){
+  if(typeof COLORS==="undefined") return;
+  const used=[];
+  data.children.forEach(function(child,index){
+    if(!child.color || used.indexOf(child.color)!==-1){
+      const free=COLORS.find(function(color){return used.indexOf(color)===-1;});
+      child.color=free || COLORS[index % COLORS.length];
+    }
+    used.push(child.color);
+  });
+}
+
 let selectedChildId = null;
 
 function saveData(){
@@ -700,7 +729,7 @@ function openChildForm(child){
     '</div>'+
     '<label>📍 Dove lo seguo?</label><select id="childLocation"><option value="casa" '+((c.location||"casa")==="casa"?"selected":"")+'>🏠 A casa</option><option value="studio" '+((c.location||"casa")==="studio"?"selected":"")+'>🏢 In studio</option></select>'+
     '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
-    '<h3>📅 Giorni, ora e durata</h3><div class="muted">Inserisci l’ora di inizio e la durata: l’ora di fine viene calcolata automaticamente.</div><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno</button>'+
+    '<h3>📅 Quando lo vedo?</h3><div class="muted">Scegli giorno, ora di inizio e durata. La fine si calcola automaticamente.</div><div id="scheduleRows"></div><button type="button" id="addScheduleRow">➕ Aggiungi un altro giorno/orario</button>'+
     '<details><summary><b>Informazioni facoltative</b></summary>'+
       '<label>Età</label><input id="childAge" value="'+escapeHtml(c.age||"")+'">'+
       '<label>Classe</label><input id="childClass" value="'+escapeHtml(c.class||"")+'">'+
@@ -728,7 +757,7 @@ function addScheduleRow(item){
   const row = document.createElement("div");
   row.className = "row3 schedule-row";
   const mins=Math.max(30,Math.round(durationHours(item.start,item.end)*60));
-  row.innerHTML = '<select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select>'+ '<input class="schedule-start" type="time" value="'+item.start+'">'+ '<div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button class="remove-schedule">×</button></div>'+ '<div class="muted schedule-end-preview" style="grid-column:2/4">Fine: '+item.end+'</div>';
+  row.innerHTML = '<div><label>Giorno</label><select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select></div>'+ '<div><label>Inizio</label><input class="schedule-start" type="time" value="'+item.start+'"></div>'+ '<div><label>Durata</label><div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button type="button" class="remove-schedule">×</button></div></div>'+ '<div class="muted schedule-end-preview" style="grid-column:1/-1">🕒 Fine calcolata automaticamente: '+item.end+'</div>';
   document.getElementById("scheduleRows").appendChild(row);
   const dur=row.querySelector('.schedule-duration'); dur.value=String([30,60,90,120,150,180].includes(mins)?mins:60);
   function update(){ row.querySelector('.schedule-end-preview').textContent='Fine: '+addMinutes(row.querySelector('.schedule-start').value,Number(dur.value)); }
@@ -792,8 +821,12 @@ function renderChildDetail(){
     target.innerHTML = '<div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>';
     return;
   }
-  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; })
-    .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+  const childName=String(child.name||"").trim().toLowerCase();
+  const sessions = data.sessions.filter(function(s){
+    if(s.childId===child.id) return true;
+    const legacyName=String(s.childName||s.child||s.name||s.bambino||"").trim().toLowerCase();
+    return legacyName && legacyName===childName;
+  }).sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
 
   target.innerHTML =
     '<div class="section-head">'+
@@ -872,7 +905,7 @@ function sessionHistoryHtml(sessions){
     html += '<tr>'+
       '<td>'+escapeHtml(s.date)+'</td>'+
       '<td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td>'+
-      '<td>'+escapeHtml(s.subject)+'<br><small>'+escapeHtml(s.workType)+'</small></td>'+
+      '<td>'+escapeHtml(s.subject||s.work||s.lavoro||'—')+'<br><small>'+escapeHtml(s.workType||s.type||s.tipo||'')+'</small></td>'+
       '<td>'+((s.location||"casa")==="studio"?"🏢 Studio":"🏠 Casa")+'</td>'+
       '<td><select class="compact-select payment-select" data-session="'+s.id+'">'+
         '<option value="false" '+(!s.paid?'selected':'')+'>🔴 Non pagato</option>'+
