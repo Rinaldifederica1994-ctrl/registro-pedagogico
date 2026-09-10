@@ -1,570 +1,118 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registro Pedagogico</title>
-<style>
-:root{
-  --primary:#6254a8; --primary-dark:#4f438f; --primary-soft:#eeebff;
-  --ink:#263858; --muted:#71809a; --bg:#f5f7fb; --card:#fff; --line:#dce4ef;
-  --green:#2f9e6f; --red:#d85b66; --orange:#e99a2e; --blue:#5b9bd5;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
-button,input,select,textarea{font:inherit}
-button{border:0;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer;background:#e9eef5;color:var(--ink)}
-button:hover{filter:brightness(.97)}
-button.primary{background:var(--primary);color:#fff}.primary:hover{background:var(--primary-dark)}
-button.green{background:var(--green);color:#fff}.danger{background:#fde7e9;color:#a93642}
-button.ghost{background:#fff;border:1px solid var(--line)}
-header{background:#fff;border-bottom:1px solid var(--line);padding:15px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px}
-.brand{font-size:23px;font-weight:800;color:var(--primary)}.subtitle,.muted{color:var(--muted);font-size:13px}
-.sync{font-size:12px;padding:7px 10px;border-radius:999px;background:#edf8f1;color:#26764f}
-.sync.offline{background:#fff3dc;color:#a66b11}
-.container{max-width:1450px;margin:auto;padding:18px}
-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab.active{background:var(--primary);color:#fff}
-.view{display:none}.view.active{display:block}
-.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:17px;box-shadow:0 5px 18px rgba(35,52,84,.04)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.layout{display:grid;grid-template-columns:300px 1fr;gap:16px}.home-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}
-h1,h2,h3,p{margin-top:0}.metric{font-size:27px;font-weight:800;margin:8px 0}
-.child-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;margin:7px 0;border-radius:12px;background:#fafbfe;border-left:8px solid var(--child);cursor:pointer}
-.child-item.selected{outline:2px solid var(--primary)}.child-meta{font-size:12px;color:var(--muted);margin-top:3px}
-.color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:7px}
-.empty{padding:28px;text-align:center;color:var(--muted)}
-.appointment{padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fff}
-.appointment b{display:block}.appointment small{color:var(--muted)}
-label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}
-input,select,textarea{width:100%;padding:10px;border:1px solid #ccd6e4;border-radius:10px;color:var(--ink);background:#fff}
-textarea{min-height:85px;resize:vertical}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.hidden{display:none!important}.money-hidden{filter:blur(7px);user-select:none}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800}
-.badge.paid{background:#dff4e8;color:#24744f}.badge.unpaid{background:#fde4e5;color:#b23c46}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-.table-wrap{overflow:auto}
-.agenda-wrap{overflow:auto}.agenda{display:grid;grid-template-columns:62px repeat(6,1fr);min-width:980px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.a-head{padding:10px;text-align:center;font-weight:800;background:#eef1f7;border-right:1px solid var(--line)}
-.time{padding:7px;font-size:12px;background:#fafbfe;border-top:1px solid var(--line)}
-.slot{min-height:40px;border-left:1px solid var(--line);border-top:1px solid var(--line);position:relative;cursor:pointer}
-.slot.free{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#f3faf6 9px,#f3faf6 18px)}
-.event{position:absolute;inset:2px;border-radius:7px;padding:4px 6px;font-size:11px;border-left:6px solid var(--event);background:color-mix(in srgb,var(--event) 17%,white);overflow:hidden}
-.modal{position:fixed;inset:0;background:rgba(26,38,62,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
-.modal.show{display:flex}.modal-box{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:20px}
-.note{background:#fff7da;padding:11px;border-radius:10px;font-size:13px}
-.location{font-size:12px;color:var(--muted)}.today-title{font-size:18px;font-weight:800}
-@media(max-width:900px){header{padding:14px}.container{padding:12px}.layout,.home-grid{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
-</style>
-</head>
-<body>
-<header>
-  <div><div class="brand">🦋 Registro Pedagogico</div><div class="subtitle">Organizzazione, sessioni e agenda in un unico archivio</div></div>
-  <div><div id="currentDate" class="muted"></div><div id="syncStatus" class="sync offline">● Archivio locale</div></div>
-</header>
-
-<div class="container">
-<nav>
-  <button class="tab active" data-view="home">🏠 Home</button>
-  <button class="tab" data-view="children">👧 Bambini</button>
-  <button class="tab" data-view="agenda">📅 Agenda</button>
-  <button class="tab" data-view="money">💶 Compensi</button>
-  <button class="tab" data-view="backup">💾 Archivio</button>
-</nav>
-
-<section id="home" class="view active">
-  <div class="home-grid">
-    <div class="panel">
-      <div class="section-head"><div><div class="today-title">📅 Appuntamenti di oggi</div><div class="muted" id="todayLabel"></div></div><button class="primary" id="homeAddAppointment">➕ Aggiungi</button></div>
-      <div id="todayAppointments"></div>
-    </div>
-    <div class="panel">
-      <div class="section-head"><h3>🟢 Prossimi spazi liberi</h3><button id="showAgenda">Vedi agenda</button></div>
-      <div id="freeSpaces"></div>
-    </div>
-  </div>
-  <div class="home-grid" style="margin-top:16px">
-    <div class="panel">
-      <div class="section-head"><h3>📌 Prossimi appuntamenti</h3></div>
-      <div id="upcomingAppointments"></div>
-    </div>
-    <div class="panel">
-      <div class="section-head"><h3>👧 I miei bambini</h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
-      <div id="homeChildren"></div>
-    </div>
-  </div>
-</section>
-
-<section id="children" class="view">
-  <div class="layout">
-    <div class="panel"><div class="section-head"><h3>Bambini</h3><button class="primary" id="addChild">➕ Inserisci</button></div><div id="childrenList"></div></div>
-    <div class="panel" id="childDetail"><div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div></div>
-  </div>
-</section>
-
-<section id="agenda" class="view">
-  <div class="panel">
-    <div class="section-head"><div><h2>📅 Agenda settimanale</h2><div class="muted">Dal lunedì al sabato · clicca su uno spazio per aggiungere un'attività</div></div><div class="actions"><button id="editAvailability">⏰ I miei orari</button><button class="primary" id="addAgenda">➕ Aggiungi</button></div></div>
-    <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
-  </div>
-</section>
-
-<section id="money" class="view">
-  <div class="cards">
-    <div class="card"><b>⏱️ Ore previste questa settimana</b><div class="metric" id="weekPlanned">0 h</div><div class="muted">tutti i bambini attivi</div></div>
-    <div class="card"><b>✅ Ore effettive questa settimana</b><div class="metric" id="weekActual">0 h</div><div class="muted">sessioni realmente svolte</div></div>
-    <div class="card"><b>💶 Compenso mensile totale</b><div class="metric" id="monthlyTotal">€0,00</div><div class="muted">mese in corso</div></div>
-    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">mese in corso</div></div>
-    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">mese in corso</div></div>
-  </div>
-  <div class="panel" style="margin-top:16px"><h3>Dettaglio per bambino</h3><div class="table-wrap" id="moneyTable"></div></div>
-</section>
-
-<section id="backup" class="view">
-  <div class="panel">
-    <h2>💾 Archivio e sicurezza</h2>
-    <div class="note">I dati vengono salvati automaticamente. Se Firebase è disponibile vengono sincronizzati anche nell'archivio online.</div>
-    <div class="actions"><button class="primary" id="exportBackup">📥 Crea backup</button><button id="importButton">📤 Ripristina backup</button><button class="danger" id="clearLocal">🗑️ Cancella solo archivio locale</button><input class="hidden" type="file" id="importFile" accept=".json"></div>
-    <hr style="margin:22px 0;border:0;border-top:1px solid var(--line)">
-    <h3>📄 Report</h3><p class="muted">Seleziona un bambino e genera un report stampabile.</p><button id="printReport">📄 Genera report</button>
-  </div>
-</section>
-</div>
-
-<div class="modal" id="modal"><div class="modal-box" id="modalContent"></div></div>
-
-<script type="module">
-"use strict";
-
-/* Firebase: stesso progetto del precedente registro */
-const firebaseConfig = {
-  apiKey:"AIzaSyDbntlazrKuldgAARLVP8D9pvjwbodSDRs",
-  authDomain:"registro-pedagogico-8e0a3.firebaseapp.com",
-  projectId:"registro-pedagogico-8e0a3",
-  storageBucket:"registro-pedagogico-8e0a3.firebasestorage.app",
-  messagingSenderId:"1029202221106",
-  appId:"1:1029202221106:web:3a6a50410d322d9a2d042b"
-};
-
-const DAYS=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-const COLORS=["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8"];
-const STORAGE="registroPedagogicoNuovoV1";
-const DEFAULT={children:[],sessions:[],commitments:[],availability:{start:"08:00",end:"20:00"}};
-
-let data=loadLocal();
-let selectedChildId=null;
-let db=null, fs=null, cloudReady=false, saving=false;
-
-function cloneDefault(){return JSON.parse(JSON.stringify(DEFAULT))}
-function normalize(raw){
-  const d=raw&&typeof raw==="object"?raw:{};
-  return {
-    children:Array.isArray(d.children)?d.children:[],
-    sessions:Array.isArray(d.sessions)?d.sessions:[],
-    commitments:Array.isArray(d.commitments)?d.commitments:[],
-    availability:d.availability&&d.availability.start&&d.availability.end?d.availability:{start:"08:00",end:"20:00"}
-  };
-}
-function loadLocal(){try{return normalize(JSON.parse(localStorage.getItem(STORAGE)||"null"))}catch{return cloneDefault()}}
-function uid(){return "id_"+Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
-function euro(v){return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(v)||0)}
-function toMin(t){const p=String(t||"00:00").split(":").map(Number);return p[0]*60+p[1]}
-function duration(s,e){return Math.max(0,(toMin(e)-toMin(s))/60)}
-function fmtHours(v){const m=Math.round((Number(v)||0)*60),h=Math.floor(m/60),r=m%60;return h?(r?h+" h "+r+" min":h+" h"):r+" min"}
-function child(id){return data.children.find(c=>c.id===id)}
-function saveLocal(){localStorage.setItem(STORAGE,JSON.stringify(data))}
-function status(text,online){const el=document.getElementById("syncStatus");el.textContent=text;el.className="sync"+(online?"":" offline")}
-async function saveAll(){
-  saveLocal();
-  if(cloudReady&&db&&fs&&!saving){
-    saving=true;
-    try{await fs.setDoc(fs.doc(db,"registroPedagogico","archivio"),data);status("● Archivio sincronizzato",true)}
-    catch(e){console.error(e);status("● Salvato solo sul dispositivo",false)}
-    finally{saving=false}
+function findAgendaItem(id){
+  // Cerca prima nei bambini
+  for(const child of data.children){
+    const item = child.schedule?.find(s => s.id === id);
+    if(item) return { type: "child", owner: child, item };
   }
-}
-function renderAll(){renderHome();renderChildren();renderChildDetail();renderAgenda();renderMoney();saveAll()}
 
-async function initFirebase(){
-  status("● Connessione archivio...",false);
-  try{
-    const appMod=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
-    fs=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
-    const authMod=await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
-    const app=appMod.initializeApp(firebaseConfig);
-    db=fs.getFirestore(app);
-    const auth=authMod.getAuth(app);
-    await authMod.setPersistence(auth,authMod.browserLocalPersistence);
-    let user=auth.currentUser;
-    if(!user){
-      user=await new Promise(resolve=>{
-        const unsub=authMod.onAuthStateChanged(auth,u=>{unsub();resolve(u)});
-      });
-    }
-    if(!user){
-      const email=prompt("Email per accedere all'archivio:");
-      const password=email?prompt("Password:"):"";
-      if(email&&password) await authMod.signInWithEmailAndPassword(auth,email.trim(),password);
-      else {status("● Modalità locale",false);renderAll();return}
-    }
-    const ref=fs.doc(db,"registroPedagogico","archivio");
-    const snap=await fs.getDoc(ref);
-    if(snap.exists()){
-      const cloud=normalize(snap.data());
-      if(cloud.children.length||cloud.sessions.length||cloud.commitments.length) data=cloud;
-      else await fs.setDoc(ref,data);
-    }else await fs.setDoc(ref,data);
-    cloudReady=true;saveLocal();status("● Archivio sincronizzato",true);renderAll();
-  }catch(e){
-    console.error("Firebase",e);status("● Modalità locale - archivio online non disponibile",false);renderAll();
+  // Poi nei commitments generali
+  const item = data.commitments.find(x => x.id === id);
+  if(item) return { type: "commitment", owner: null, item };
+
+  return null;
+}
+
+function deleteAgendaItem(id){
+  const res = findAgendaItem(id);
+  if(!res) return;
+
+  const { type, owner } = res;
+
+  if(type === "child"){
+    owner.schedule = owner.schedule.filter(s => s.id !== id);
+  } else {
+    data.commitments = data.commitments.filter(x => x.id !== id);
   }
 }
 
-function setView(name){
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===name));
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
-  if(name==="agenda")renderAgenda();
-}
-document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
-
-function dayIndexToday(){const d=new Date().getDay();return d===0?6:d-1}
-function locationIcon(l){return l==="studio"?"🏢 In studio":"🏠 A casa"}
-
-function scheduleItems(){
-  const out=[];
-  data.children.forEach(c=>(Array.isArray(c.schedule)?c.schedule:[]).forEach(s=>out.push({...s,type:"child",childId:c.id,name:c.name,color:c.color,location:s.location||c.location||"casa"})));
-  data.commitments.forEach(s=>out.push({...s,type:"commitment",color:s.color||"#78869b"}));
-  return out;
-}
-function renderHome(){
-  const now=new Date(), today=dayIndexToday();
-  document.getElementById("currentDate").textContent=new Intl.DateTimeFormat("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(now);
-  document.getElementById("todayLabel").textContent=DAYS[today];
-  const items=scheduleItems().filter(x=>Number(x.day)===today).sort((a,b)=>toMin(a.start)-toMin(b.start));
-  document.getElementById("todayAppointments").innerHTML=items.length?items.map(x=>`<div class="appointment"><b>${esc(x.name)}</b><small>${x.start}–${x.end} · ${x.type==="child"?locationIcon(x.location):esc(x.type||"Impegno")}</small></div>`).join(""):'<div class="empty">Nessun appuntamento previsto oggi.</div>';
-  const upcoming=[];
-  for(let off=0;off<6;off++){const day=(today+off)%6;scheduleItems().filter(x=>Number(x.day)===day).sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(x=>upcoming.push({day,off,...x}))}
-  document.getElementById("upcomingAppointments").innerHTML=upcoming.slice(0,8).map(x=>`<div class="appointment"><b><span class="color-dot" style="background:${x.color}"></span>${esc(x.name)}</b><small>${x.off===0?"Oggi":DAYS[x.day]} · ${x.start}–${x.end}${x.type==="child"?" · "+locationIcon(x.location):""}</small></div>`).join("")||'<div class="empty">Nessun appuntamento.</div>';
-  const free=findFreeSpaces().slice(0,5);
-  document.getElementById("freeSpaces").innerHTML=free.length?free.map(x=>`<div class="appointment"><b>${DAYS[x.day]}</b><small>${x.start}–${x.end}</small></div>`).join(""):'<div class="empty">Nessuno spazio libero.</div>';
-  const children=data.children.map(c=>`<div class="child-item" style="--child:${c.color}" data-home-child="${c.id}"><span><b>${esc(c.name)}</b><div class="child-meta">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}</div></span><span>›</span></div>`).join("");
-  document.getElementById("homeChildren").innerHTML=children||'<div class="empty">Ancora nessun bambino.</div>';
-  document.querySelectorAll("[data-home-child]").forEach(e=>e.addEventListener("click",()=>{selectedChildId=e.dataset.homeChild;setView("children");renderChildren();renderChildDetail()}));
-}
-function findFreeSpaces(){
-  const result=[],start=toMin(data.availability.start),end=toMin(data.availability.end);
-  for(let day=0;day<6;day++){
-    for(let m=start;m<end;m+=30){
-      const busy=scheduleItems().some(x=>Number(x.day)===day&&m<toMin(x.end)&&m+30>toMin(x.start));
-      if(!busy) result.push({day,start:minTime(m),end:minTime(m+30)});
-    }
-  }
-  return result;
-}
-function minTime(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
-
-function renderChildren(){
-  const html=data.children.map(c=>`<div class="child-item ${selectedChildId===c.id?"selected":""}" style="--child:${c.color}" data-child="${c.id}"><span><b>${esc(c.name)}</b><div class="child-meta">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}</div></span><span>›</span></div>`).join("");
-  document.getElementById("childrenList").innerHTML=html||'<div class="empty">Ancora nessun bambino.</div>';
-  document.querySelectorAll("[data-child]").forEach(e=>e.addEventListener("click",()=>{selectedChildId=e.dataset.child;renderChildren();renderChildDetail()}));
-}
-function weekBounds(){
-  const now=new Date();
-  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const day=today.getDay()===0?7:today.getDay();
-  const monday=new Date(today);monday.setDate(today.getDate()-day+1);
-  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
-  return {monday,sunday};
-}
-function dateInCurrentWeek(value){
-  if(!value)return false;
-  const p=String(value).split("-").map(Number);
-  const d=new Date(p[0],p[1]-1,p[2]);
-  const b=weekBounds();
-  return d>=b.monday&&d<=b.sunday;
-}
-function formatHours(v){
-  const mins=Math.round((Number(v)||0)*60),h=Math.floor(mins/60),m=mins%60;
-  if(!h)return m+" min";
-  return m?h+" h "+m+" min":h+" h";
-}
-function childPlannedWeekHours(c){
-  if(c.fixed===false&&c.active===false)return 0;
-  return (Array.isArray(c.schedule)?c.schedule:[]).reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childActualWeekHours(id){
-  return data.sessions.filter(s=>s.childId===id&&dateInCurrentWeek(s.date))
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childPaidHours(id){
-  return data.sessions.filter(s=>s.childId===id&&s.paid)
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function totalPlannedWeekHours(){
-  return data.children.reduce((t,c)=>t+childPlannedWeekHours(c),0);
-}
-function totalActualWeekHours(){
-  return data.children.reduce((t,c)=>t+childActualWeekHours(c.id),0);
-}
-function dateInCurrentMonth(value){
-  if(!value)return false;
-  const p=String(value).split("-").map(Number);
-  const d=new Date(p[0],p[1]-1,p[2]);
-  const now=new Date();
-  return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-}
-function childActualMonthHours(id){
-  return data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date))
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childUnpaidMonthHours(id){
-  return data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date)&&!s.paid)
-    .reduce((t,s)=>t+duration(s.start,s.end),0);
-}
-function childMonthlyMoney(id){
-  const c=child(id),rate=Number(c?.rate)||0;
-  let total=0,received=0;
-  data.sessions.filter(s=>s.childId===id&&dateInCurrentMonth(s.date)).forEach(s=>{
-    const amount=duration(s.start,s.end)*rate;
-    total+=amount;
-    if(s.paid) received+=amount;
-  });
-  return {total,received,due:total-received};
-}
-function childMoney(id){
-  const c=child(id),rate=Number(c?.rate)||0;let earned=0,received=0,unpaidHours=0;
-  data.sessions.filter(s=>s.childId===id).forEach(s=>{
-    const h=duration(s.start,s.end),amount=h*rate;
-    earned+=amount;
-    if(s.paid)received+=amount;else unpaidHours+=h;
-  });
-  return {earned,received,due:earned-received,paidHours:childPaidHours(id),unpaidHours};
-}
-function sessionOptions(values){
-  return values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")+'<option value="Altro">✏️ Altro...</option>';
-}
-function sessionSelect(id,label,values){
-  return `<div><label>${label}</label>
-    <select id="${id}" onchange="toggleOtherField('${id}')">${sessionOptions(values)}</select>
-    <input id="${id}Other" style="display:none;margin-top:8px" placeholder="Scrivi tu..." />
-  </div>`;
-}
-function toggleOtherField(id){
-  const select=document.getElementById(id);
-  const input=document.getElementById(id+"Other");
-  if(!select||!input)return;
-  input.style.display=select.value==="Altro"?"block":"none";
-  if(select.value==="Altro") input.focus();
-}
-function sessionValue(id){
-  const select=document.getElementById(id);
-  const input=document.getElementById(id+"Other");
-  if(select.value==="Altro"){
-    const custom=input.value.trim();
-    if(!custom){alert("Hai scelto Altro: scrivi la voce personalizzata.");throw new Error("custom value missing")}
-    return custom;
-  }
-  return select.value;
-}
-function renderChildDetail(){
-  const target=document.getElementById("childDetail"),c=child(selectedChildId);
-  if(!c){target.innerHTML='<div class="empty">Seleziona un bambino.</div>';return}
-  const sessions=data.sessions.filter(s=>s.childId===c.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  target.innerHTML=`
-    <div class="section-head"><div><h2 style="border-left:9px solid ${c.color};padding-left:10px">${esc(c.name)}</h2><div class="muted">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}${c.fixed===false?" · "+(c.active===false?"Non attivo questa settimana":"Attivo questa settimana"):""}</div></div><div><button id="editChild">✏️ Modifica</button><button class="danger" id="deleteChild">🗑️</button></div></div>
-    ${sessionFormHtml(c)}
-    <h3 style="margin-top:20px">📚 Storico sessioni</h3>
-    <div class="table-wrap">${sessions.length?historyHtml(sessions):'<div class="empty">Nessuna sessione salvata.</div>'}</div>`;
-  document.getElementById("editChild").onclick=()=>openChildForm(c);
-  document.getElementById("deleteChild").onclick=()=>deleteChild(c.id);
-  document.getElementById("saveSession").onclick=saveSession;
-  document.querySelectorAll(".mark-paid").forEach(b=>b.onclick=()=>markPaid(b.dataset.id));
-  document.querySelectorAll(".delete-session").forEach(b=>b.onclick=()=>deleteSession(b.dataset.id));
-}
-function sessionFormHtml(c){return `<div class="panel" style="margin-top:16px"><h3>➕ Nuova sessione</h3>
-<div class="row3"><div><label>Data</label><input id="sDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label>Dalle</label><input id="sStart" type="time" value="15:00"></div><div><label>Alle</label><input id="sEnd" type="time" value="16:00"></div></div>
-<div class="row2">${sessionSelect("sMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])}${sessionSelect("sSubject","📚 Lavoro di oggi",["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])}</div>
-<div class="row2">${sessionSelect("sWork","🎯 Tipo di lavoro",["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])}${sessionSelect("sAttention","👀 Attenzione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</div>
-<div class="row2">${sessionSelect("sCollaboration","🤝 Collaborazione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}<div><label>💶 Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
-<div class="row2"><div><label>📍 Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div></div>
-<label>📝 Note / comportamento</label><textarea id="sNotes"></textarea>
-<label>📌 Cose da fare per la prossima volta</label><textarea id="sNext"></textarea>
-<div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div></div>`}
-function saveSession(){
-  const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
-  if(!selectedChildId||!start||!end||start>=end){alert("Controlla gli orari.");return}
-  let mood,subject,workType,attention,collaboration;
-  try{
-    mood=sessionValue("sMood");
-    subject=sessionValue("sSubject");
-    workType=sessionValue("sWork");
-    attention=sessionValue("sAttention");
-    collaboration=sessionValue("sCollaboration");
-  }catch(e){return}
-  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,mood,subject,workType,attention,collaboration,notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
-  renderAll();
-}
-function historyHtml(list){return `<table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th></th></tr>${list.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.start)}–${esc(s.end)}</td><td>${formatHours(duration(s.start,s.end))}</td><td>${esc(s.subject||"")}<br><small>${esc(s.workType||"")}</small></td><td>${locationIcon(s.location||"casa")}</td><td>${s.paid?'<span class="badge paid">Pagato</span>':'<span class="badge unpaid">Non pagato</span>'}</td><td>${!s.paid?`<button class="green mark-paid" data-id="${s.id}">✓ Pagato</button>`:""} <button class="danger delete-session" data-id="${s.id}">🗑️</button></td></tr>`).join("")}</table>`}
-function saveSession(){
-  const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
-  if(!selectedChildId||!start||!end||start>=end){alert("Controlla gli orari.");return}
-  const other=document.getElementById("sOther").value.trim();
-  const val=id=>{const v=document.getElementById(id).value;return v==="Altro"&&other?other:v};
-  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,mood:val("sMood"),subject:val("sSubject"),workType:val("sWork"),attention:val("sAttention"),collaboration:val("sCollaboration"),notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
-  renderAll();
-}
-function markPaid(id){const s=data.sessions.find(x=>x.id===id);if(s&&confirm("Confermi che questa sessione è stata pagata?")){s.paid=true;s.paidDate=new Date().toISOString().slice(0,10);renderAll()}}
-function deleteSession(id){if(confirm("Eliminare questa sessione?")){data.sessions=data.sessions.filter(s=>s.id!==id);renderAll()}}
-function deleteChild(id){if(confirm("Eliminare il bambino e tutto il suo storico?")){data.children=data.children.filter(c=>c.id!==id);data.sessions=data.sessions.filter(s=>s.childId!==id);selectedChildId=null;renderAll()}}
-
-function renderAgenda(){
-  let html='<div class="a-head">Ora</div>'+DAYS.map(d=>`<div class="a-head">${d}</div>`).join("");
-  const start=toMin(data.availability.start),end=toMin(data.availability.end),items=scheduleItems();
-  for(let m=start;m<end;m+=30){
-    html+=`<div class="time">${m%60===0?minTime(m):""}</div>`;
-    for(let day=0;day<6;day++){
-      const ev=items.filter(x=>Number(x.day)===day&&m<toMin(x.end)&&m+30>toMin(x.start));
-      if(ev.length){
-        const x=ev[0],text=m===toMin(x.start)?`<b>${esc(x.name)}</b><br>${x.start}–${x.end}${x.type==="child"?`<br>${locationIcon(x.location)}`:""}`:"";
-        html+=`<div class="slot" data-event="${x.id||""}"><div class="event" style="--event:${x.color}">${text||"&nbsp;"}</div></div>`;
-      }else html+=`<div class="slot free" data-day="${day}" data-time="${minTime(m)}"><span style="font-size:10px;color:#65a67a;padding:4px">LIBERO</span></div>`;
-    }
-  }
-  document.getElementById("agendaGrid").innerHTML=html;
-  document.querySelectorAll(".slot.free").forEach(e=>e.onclick=()=>openAgendaForm(Number(e.dataset.day),e.dataset.time));
-  document.querySelectorAll("[data-event]").forEach(e=>e.onclick=()=>{if(e.dataset.event)openEditAgenda(e.dataset.event)});
-}
-function openAgendaForm(day=0,start="08:00"){
-  modal(`<h2>➕ Aggiungi all'agenda</h2>
-  <label>Tipo</label><select id="aType"><option value="child">👧 Bambino</option><option value="commitment">📌 Impegno</option></select>
-  <div id="agendaDynamic"></div>
-  <div class="row3"><div><label>Giorno</label><select id="aDay">${DAYS.map((d,i)=>`<option value="${i}" ${i===day?"selected":""}>${d}</option>`).join("")}</select></div><div><label>Dalle</label><input id="aStart" type="time" value="${start}"></div><div><label>Alle</label><input id="aEnd" type="time" value="${addMin(start,60)}"></div></div>
-  <div class="actions"><button class="primary" id="saveAgenda">Salva</button><button id="cancelModal">Annulla</button></div>`);
-  const draw=()=>{const type=document.getElementById("aType").value;document.getElementById("agendaDynamic").innerHTML=type==="child"?`<label>Bambino</label><select id="aChild">${data.children.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><label>Luogo</label><select id="aLocation"><option value="casa">🏠 A casa</option><option value="studio">🏢 In studio</option></select>`:`<label>Tipo impegno</label><select id="aCommitmentType"><option>🚗 Spostamento</option><option>🏢 Studio / Sede</option><option>🏫 Scuola</option><option>📌 Impegno personale</option></select><label>Descrizione</label><input id="aName" placeholder="Es. Riunione">`};
-  document.getElementById("aType").onchange=draw;draw();
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveAgenda").onclick=()=>{
-    const s=document.getElementById("aStart").value,e=document.getElementById("aEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}
-    const day=Number(document.getElementById("aDay").value);
-    if(document.getElementById("aType").value==="child"){
-      const c=child(document.getElementById("aChild").value);if(!c){alert("Inserisci prima un bambino.");return}
-      c.schedule=c.schedule||[];c.schedule.push({id:uid(),day,start:s,end:e,location:document.getElementById("aLocation").value});
-    }else data.commitments.push({id:uid(),type:document.getElementById("aCommitmentType").value,name:document.getElementById("aName").value.trim()||document.getElementById("aCommitmentType").value,day,start:s,end:e,color:"#78869b"});
-    closeModal();renderAll();
-  };
-}
 function openEditAgenda(id){
-  let owner=null,item=null,type="";
-  for(const c of data.children){const found=(c.schedule||[]).find(s=>s.id===id);if(found){owner=c;item=found;type="child";break}}
-  if(!item){item=data.commitments.find(x=>x.id===id);if(item)type="commitment"}
-  if(!item)return;
-  modal(`<h2>✏️ Modifica appuntamento</h2><div class="note">${type==="child"?esc(owner.name)+" · "+locationIcon(item.location||owner.location):esc(item.name)}</div>
-  <div class="row3"><div><label>Giorno</label><select id="eDay">${DAYS.map((d,i)=>`<option value="${i}" ${Number(item.day)===i?"selected":""}>${d}</option>`).join("")}</select></div><div><label>Dalle</label><input id="eStart" type="time" value="${item.start}"></div><div><label>Alle</label><input id="eEnd" type="time" value="${item.end}"></div></div>
-  ${type==="child"?`<label>Luogo</label><select id="eLocation"><option value="casa" ${(item.location||owner.location)==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(item.location||owner.location)==="studio"?"selected":""}>🏢 In studio</option></select>`:`<label>Descrizione</label><input id="eName" value="${esc(item.name)}">`}
-  <div class="actions"><button class="primary" id="saveEdit">Salva</button><button class="danger" id="deleteAgenda">Elimina</button><button id="cancelModal">Annulla</button></div>`);
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveEdit").onclick=()=>{const s=document.getElementById("eStart").value,e=document.getElementById("eEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}item.day=Number(document.getElementById("eDay").value);item.start=s;item.end=e;if(type==="child")item.location=document.getElementById("eLocation").value;else item.name=document.getElementById("eName").value.trim()||item.name;closeModal();renderAll()};
-  document.getElementById("deleteAgenda").onclick=()=>{if(!confirm("Eliminare questo appuntamento?"))return;if(type==="child")owner.schedule=owner.schedule.filter(s=>s.id!==id);else data.commitments=data.commitments.filter(s=>s.id!==id);closeModal();renderAll()};
-}
-function addMin(t,n){return minTime(toMin(t)+n)}
+  const res = findAgendaItem(id);
+  if(!res) return;
 
-function addChildScheduleRow(container,item={day:0,start:"15:00",end:"16:00",location:"casa"}){
-  const row=document.createElement("div");row.className="row3 schedule-row";
-  row.innerHTML=`<select class="sch-day">${DAYS.map((d,i)=>`<option value="${i}" ${Number(item.day)===i?"selected":""}>${d}</option>`).join("")}</select>
-  <input class="sch-start" type="time" value="${item.start||"15:00"}">
-  <div style="display:flex;gap:6px"><input class="sch-end" type="time" value="${item.end||"16:00"}"><button type="button" class="remove-sch">×</button></div>
-  <select class="sch-location" style="grid-column:1/-1"><option value="casa" ${(item.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(item.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select>`;
-  container.appendChild(row);row.querySelector(".remove-sch").onclick=()=>row.remove();
-}
-function openChildForm(c=null){
-  const isEdit=!!c;
-  modal(`<h2>${isEdit?"✏️ Modifica":"➕ Nuovo"} bambino</h2>
-  <div class="row2"><div><label>Nome</label><input id="cName" value="${esc(c?.name||"")}"></div><div><label>Compenso orario (€)</label><input id="cRate" type="number" min="0" step="0.01" value="${Number(c?.rate)||0}"></div></div>
-  <div class="row2"><div><label>Luogo abituale</label><select id="cLocation"><option value="casa" ${(c?.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c?.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>È fisso ogni settimana?</label><select id="cFixed"><option value="true" ${c?.fixed!==false?"selected":""}>Sì</option><option value="false" ${c?.fixed===false?"selected":""}>No</option></select></div></div>
-  <label>Questa settimana è attivo?</label><select id="cActive"><option value="true" ${c?.active!==false?"selected":""}>Sì</option><option value="false" ${c?.active===false?"selected":""}>No</option></select>
-  <h3>📅 Giorni e orari previsti</h3><div class="note">Queste ore servono per calcolare automaticamente le ore che dovevi fare ogni settimana.</div><div id="childScheduleRows" style="margin-top:10px"></div><button type="button" id="addChildSchedule">➕ Aggiungi giorno e orario</button>
-  <details style="margin-top:18px"><summary><b>Informazioni del bambino</b></summary>
-  <div class="row2"><div><label>Età</label><input id="cAge" value="${esc(c?.age||"")}"></div><div><label>Classe</label><input id="cClass" value="${esc(c?.class||"")}"></div></div>
-  <label>Scuola</label><input id="cSchool" value="${esc(c?.school||"")}">
-  <label>Obiettivi</label><textarea id="cGoals">${esc(c?.goals||"")}</textarea>
-  <label>Note pedagogiche</label><textarea id="cNotes">${esc(c?.notes||"")}</textarea></details>
-  <div class="actions"><button class="primary" id="saveChild">💾 Salva</button><button id="cancelModal">Annulla</button></div>`);
-  const box=document.getElementById("childScheduleRows");
-  const rows=Array.isArray(c?.schedule)&&c.schedule.length?c.schedule:[{day:0,start:"15:00",end:"16:00",location:c?.location||"casa"}];
-  rows.forEach(r=>addChildScheduleRow(box,r));
-  document.getElementById("addChildSchedule").onclick=()=>addChildScheduleRow(box,{location:document.getElementById("cLocation").value});
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveChild").onclick=()=>{
-    const name=document.getElementById("cName").value.trim();if(!name){alert("Inserisci il nome.");return}
-    const schedule=[...document.querySelectorAll(".schedule-row")].map(r=>({id:uid(),day:Number(r.querySelector(".sch-day").value),start:r.querySelector(".sch-start").value,end:r.querySelector(".sch-end").value,location:r.querySelector(".sch-location").value})).filter(s=>s.start&&s.end&&s.start<s.end);
-    const obj={id:c?.id||uid(),name,rate:Number(document.getElementById("cRate").value)||0,location:document.getElementById("cLocation").value,fixed:document.getElementById("cFixed").value==="true",active:document.getElementById("cActive").value==="true",age:document.getElementById("cAge").value,class:document.getElementById("cClass").value,school:document.getElementById("cSchool").value,goals:document.getElementById("cGoals").value,notes:document.getElementById("cNotes").value,color:c?.color||COLORS[data.children.length%COLORS.length],schedule};
-    if(c)Object.assign(c,obj);else data.children.push(obj);selectedChildId=obj.id;closeModal();renderAll();
+  const { type, owner, item } = res;
+
+  const locationField = type === "child"
+    ? `
+      <label>Luogo</label>
+      <select id="eLocation">
+        <option value="casa" ${item.location==="casa"?"selected":""}>🏠 A casa</option>
+        <option value="studio" ${item.location==="studio"?"selected":""}>🏢 In studio</option>
+      </select>
+    `
+    : "";
+
+  modal(`
+    <h2>✏️ Modifica appuntamento</h2>
+
+    <div class="note">
+      ${type==="child"
+        ? esc(owner.name) + " · " + locationIcon(item.location || owner.location)
+        : esc(item.name)}
+    </div>
+
+    <div class="row3">
+      <div>
+        <label>Giorno</label>
+        <select id="eDay">
+          ${DAYS.map((d,i)=>`
+            <option value="${i}" ${item.day===i?"selected":""}>${d}</option>
+          `).join("")}
+        </select>
+      </div>
+
+      <div>
+        <label>Dalle</label>
+        <input id="eStart" type="time" value="${item.start}">
+      </div>
+
+      <div>
+        <label>Alle</label>
+        <input id="eEnd" type="time" value="${item.end}">
+      </div>
+    </div>
+
+    ${locationField}
+
+    <div class="actions">
+      <button class="primary" id="saveEdit">Aggiorna</button>
+      <button class="danger" id="deleteEdit">Elimina</button>
+      <button id="cancelModal">Annulla</button>
+    </div>
+  `);
+
+  // Eventi
+  document.getElementById("cancelModal").onclick = closeModal;
+
+  document.getElementById("saveEdit").onclick = () => {
+    const s = document.getElementById("eStart").value;
+    const e = document.getElementById("eEnd").value;
+
+    // Validazione robusta
+    const start = new Date(`1970-01-01T${s}`);
+    const end = new Date(`1970-01-01T${e}`);
+
+    if(!s || !e || start >= end){
+      alert("Controlla gli orari.");
+      return;
+    }
+
+    item.day = Number(document.getElementById("eDay").value);
+    item.start = s;
+    item.end = e;
+
+    if(type === "child"){
+      item.location = document.getElementById("eLocation").value;
+    }
+
+    closeModal();
+    renderAll();
+  };
+
+  document.getElementById("deleteEdit").onclick = () => {
+    if(confirm("Eliminare questo impegno dall'agenda?")){
+      deleteAgendaItem(id);
+      closeModal();
+      renderAll();
+    }
   };
 }
-
-function openAvailability(){
-  modal(`<h2>⏰ I miei orari di lavoro</h2><div class="note">Gli spazi fuori da questo orario non vengono mostrati come disponibili.</div><div class="row2"><div><label>Inizio</label><input id="avStart" type="time" value="${data.availability.start}"></div><div><label>Fine</label><input id="avEnd" type="time" value="${data.availability.end}"></div></div><div class="actions"><button class="primary" id="saveAvailability">Salva</button><button id="cancelModal">Annulla</button></div>`);
-  document.getElementById("cancelModal").onclick=closeModal;
-  document.getElementById("saveAvailability").onclick=()=>{const s=document.getElementById("avStart").value,e=document.getElementById("avEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}data.availability={start:s,end:e};closeModal();renderAll()};
-}
-function renderMoney(){
-  let monthlyTotal=0,received=0,due=0;
-  const rows=data.children.map(c=>{
-    const actual=childActualMonthHours(c.id);
-    const unpaid=childUnpaidMonthHours(c.id);
-    const money=childMonthlyMoney(c.id);
-    monthlyTotal+=money.total;
-    received+=money.received;
-    due+=money.due;
-    return `<tr>
-      <td><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</td>
-      <td>${formatHours(actual)}</td>
-      <td>${formatHours(unpaid)}</td>
-    </tr>`;
-  }).join("");
-
-  document.getElementById("weekPlanned").textContent=formatHours(totalPlannedWeekHours());
-  document.getElementById("weekActual").textContent=formatHours(totalActualWeekHours());
-  document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
-  document.getElementById("received").textContent=euro(received);
-  document.getElementById("due").textContent=euro(due);
-
-  document.getElementById("moneyTable").innerHTML=rows
-    ? `<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>${rows}</table>
-       <div class="muted" style="margin-top:10px">I dati della tabella si riferiscono al mese in corso. Quando una sessione viene impostata come <b>Pagata</b>, le relative ore vengono tolte automaticamente da «Ore da pagare».</div>`
-    : '<div class="empty">Ancora nessun dato.</div>';
-}
-
-function modal(html){document.getElementById("modalContent").innerHTML=html;document.getElementById("modal").classList.add("show")}
-function closeModal(){document.getElementById("modal").classList.remove("show")}
-document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
-
-function exportBackup(){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="backup-registro-pedagogico.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function importBackup(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{data=normalize(JSON.parse(r.result));selectedChildId=null;renderAll();alert("Backup ripristinato correttamente.")}catch{alert("Il file non è un backup valido.")}};r.readAsText(file)}
-function printReport(){
-  const c=child(selectedChildId);if(!c){alert("Prima seleziona un bambino.");return}
-  const sessions=data.sessions.filter(s=>s.childId===c.id),m=childMoney(c.id),w=window.open("","_blank");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Report ${esc(c.name)}</title><style>body{font-family:Arial;padding:30px;color:#263858}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ccc;text-align:left}</style></head><body><h1>Registro Pedagogico – ${esc(c.name)}</h1><p><b>Luogo abituale:</b> ${locationIcon(c.location)}</p><p><b>Maturato:</b> ${euro(m.earned)} · <b>Incassato:</b> ${euro(m.received)} · <b>Da ricevere:</b> ${euro(m.due)}</p><h2>Storico sessioni</h2><table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Luogo</th></tr>${sessions.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.start)}–${esc(s.end)}</td><td>${esc(s.subject)} – ${esc(s.workType)}</td><td>${locationIcon(s.location)}</td></tr>`).join("")}</table><script>window.onload=()=>window.print()<\/script></body></html>`);
-  w.document.close();
-}
-
-document.getElementById("addChild").onclick=()=>openChildForm();
-document.getElementById("addChildHome").onclick=()=>openChildForm();
-document.getElementById("homeAddAppointment").onclick=()=>openAgendaForm(dayIndexToday(),"15:00");
-document.getElementById("addAgenda").onclick=()=>openAgendaForm();
-document.getElementById("showAgenda").onclick=()=>setView("agenda");
-document.getElementById("editAvailability").onclick=openAvailability;
-document.getElementById("exportBackup").onclick=exportBackup;
-document.getElementById("importButton").onclick=()=>document.getElementById("importFile").click();
-document.getElementById("importFile").onchange=e=>importBackup(e.target.files[0]);
-document.getElementById("printReport").onclick=printReport;
-document.getElementById("clearLocal").onclick=()=>{if(confirm("Cancello solo i dati salvati su questo dispositivo. L'archivio online non viene eliminato.")){localStorage.removeItem(STORAGE);alert("Archivio locale cancellato. Ricarica la pagina per recuperare l'archivio online.")}};
-
-renderAll();
-initFirebase();
-</script>
-</body>
-</html>
