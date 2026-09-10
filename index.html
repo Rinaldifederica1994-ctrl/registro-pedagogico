@@ -308,6 +308,12 @@ function weekHours(){
   },0);
 }
 
+function childWeekHours(child){
+  return activeSchedule(child).reduce(function(total,item){
+    return total + durationHours(item.start,item.end);
+  },0);
+}
+
 function occurrencesInMonth(dayIndex){
   const now = new Date();
   const year = now.getFullYear();
@@ -323,20 +329,64 @@ function occurrencesInMonth(dayIndex){
   return count;
 }
 
+function isDateInCurrentWeek(date){
+  const today = new Date();
+  const current = new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  const day = current.getDay()===0 ? 7 : current.getDay();
+  const monday = new Date(current);
+  monday.setDate(current.getDate()-day+1);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return date>=monday && date<=sunday;
+}
+
+function childMonthHours(child){
+  const schedule = activeSchedule(child);
+  if(child.fixed!==false){
+    return schedule.reduce(function(total,item){
+      return total + durationHours(item.start,item.end)*occurrencesInMonth(item.day);
+    },0);
+  }
+
+  // Per i bambini non fissi conta solo la settimana impostata come attiva.
+  if(child.active===false) return 0;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const days = new Date(year,month+1,0).getDate();
+  let total = 0;
+
+  schedule.forEach(function(item){
+    for(let d=1; d<=days; d++){
+      const date = new Date(year,month,d);
+      const index = date.getDay()===0 ? 6 : date.getDay()-1;
+      if(index===Number(item.day) && isDateInCurrentWeek(date)){
+        total += durationHours(item.start,item.end);
+      }
+    }
+  });
+  return total;
+}
+
 function monthHours(){
   return data.children.reduce(function(total,child){
-    return total + activeSchedule(child).reduce(function(sum,item){
-      return sum + durationHours(item.start,item.end)*occurrencesInMonth(item.day);
-    },0);
+    return total + childMonthHours(child);
+  },0);
+}
+
+function childActualMonthHours(childId){
+  const now = new Date();
+  const prefix = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return data.sessions.filter(function(session){
+    return session.childId===childId && String(session.date||"").slice(0,7)===prefix;
+  }).reduce(function(total,session){
+    return total + durationHours(session.start,session.end);
   },0);
 }
 
 function monthlyForecast(){
   return data.children.reduce(function(total,child){
-    const childTotal = activeSchedule(child).reduce(function(sum,item){
-      return sum + durationHours(item.start,item.end)*occurrencesInMonth(item.day)*(Number(child.rate)||0);
-    },0);
-    return total + childTotal;
+    return total + childMonthHours(child)*(Number(child.rate)||0);
   },0);
 }
 
@@ -589,6 +639,9 @@ function renderChildDetail(){
       '<div><button id="editChild">✏️ Modifica</button> <button class="danger" id="deleteChild">🗑️ Elimina</button></div>'+
     '</div>'+
     '<div class="cards">'+
+      '<div class="card"><b>⏱️ Ore previste settimanali</b><div class="metric">'+formatHours(childWeekHours(child))+'</div><div class="muted">settimana attiva</div></div>'+
+      '<div class="card"><b>📅 Ore previste mensili</b><div class="metric">'+formatHours(childMonthHours(child))+'</div><div class="muted">mese corrente</div></div>'+
+      '<div class="card"><b>✅ Ore effettive del mese</b><div class="metric">'+formatHours(childActualMonthHours(child.id))+'</div><div class="muted">sessioni realmente svolte</div></div>'+
       '<div class="card"><b>💰 Maturato</b><div class="metric">'+euro(money.earned)+'</div></div>'+
       '<div class="card"><b>🟢 Incassato</b><div class="metric">'+euro(money.received)+'</div></div>'+
       '<div class="card"><b>🔴 Mi deve</b><div class="metric">'+euro(money.due)+'</div></div>'+
