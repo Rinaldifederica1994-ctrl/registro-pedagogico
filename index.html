@@ -493,10 +493,21 @@ function renderMoney(){
 
   let rows = data.children.map(function(child){
     const money = childMoney(child.id);
+    const plannedHours = childMonthHours(child);
+    const actualHours = childActualMonthHours(child.id);
+
     totals.earned += money.earned;
     totals.received += money.received;
     totals.due += money.due;
-    return '<tr><td>'+escapeHtml(child.name)+'</td><td>'+euro(money.earned)+'</td><td>'+euro(money.received)+'</td><td>'+euro(money.due)+'</td></tr>';
+
+    return '<tr>'+ 
+      '<td>'+escapeHtml(child.name)+'</td>'+ 
+      '<td>'+formatHours(plannedHours)+'</td>'+ 
+      '<td>'+formatHours(actualHours)+'</td>'+ 
+      '<td>'+euro(money.earned)+'</td>'+ 
+      '<td>'+euro(money.received)+'</td>'+ 
+      '<td>'+euro(money.due)+'</td>'+ 
+    '</tr>';
   }).join("");
 
   document.getElementById("moneyForecast").textContent = euro(monthlyForecast());
@@ -505,7 +516,7 @@ function renderMoney(){
   document.getElementById("due").textContent = euro(totals.due);
 
   document.getElementById("moneyTable").innerHTML = rows
-    ? '<table><tr><th>Bambino</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>'+rows+'</table>'
+    ? '<table><tr><th>Bambino</th><th>Ore previste mese</th><th>Ore effettive mese</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
 }
 
