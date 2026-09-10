@@ -65,6 +65,9 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 .trend-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
 .trend-pill{background:#eef1f7;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700}
 @media(max-width:850px){header{padding:14px}.container{padding:12px}.layout{grid-template-columns:1fr}.row2,.row3{grid-template-columns:1fr}.brand{font-size:20px}}
+
+.schedule-row{margin:12px 0;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa}
+.sch-end-preview{background:#f3f4f6}
 </style>
 </head>
 <body style="display:none;">
@@ -233,8 +236,7 @@ async function initFirebase() {
     }
 
     cloudLoaded = true;
-    ensureUniqueChildColors();
-renderAll();
+    renderAll();
 
     // L'app viene mostrata SOLO dopo login e caricamento archivio.
     document.body.style.display = "block";
@@ -251,34 +253,6 @@ const DAYS = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
 const COLORS = ["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8","#d1a916"];
 
 let data = JSON.parse(localStorage.getItem("registroPedagogicoV2") || '{"children":[],"sessions":[],"commitments":[]}');
-
-/* Recupera automaticamente lo storico creato con versioni precedenti. */
-function migrateLegacySessions(){
-  if(!Array.isArray(data.children)) data.children=[];
-  if(!Array.isArray(data.sessions)) data.sessions=[];
-  data.sessions.forEach(function(s){
-    if(data.children.some(function(c){return c.id===s.childId;})) return;
-    const legacyName=String(s.childName||s.child||s.name||s.bambino||"").trim().toLowerCase();
-    const match=data.children.find(function(c){
-      return legacyName && String(c.name||"").trim().toLowerCase()===legacyName;
-    });
-    if(match) s.childId=match.id;
-  });
-}
-migrateLegacySessions();
-
-function ensureUniqueChildColors(){
-  if(typeof COLORS==="undefined") return;
-  const used=[];
-  data.children.forEach(function(child,index){
-    if(!child.color || used.indexOf(child.color)!==-1){
-      const free=COLORS.find(function(color){return used.indexOf(color)===-1;});
-      child.color=free || COLORS[index % COLORS.length];
-    }
-    used.push(child.color);
-  });
-}
-
 let selectedChildId = null;
 
 function saveData(){
@@ -729,7 +703,7 @@ function openChildForm(child){
     '</div>'+
     '<label>📍 Dove lo seguo?</label><select id="childLocation"><option value="casa" '+((c.location||"casa")==="casa"?"selected":"")+'>🏠 A casa</option><option value="studio" '+((c.location||"casa")==="studio"?"selected":"")+'>🏢 In studio</option></select>'+
     '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
-    '<h3>📅 Quando lo vedo?</h3><div class="muted">Scegli giorno, ora di inizio e durata. La fine si calcola automaticamente.</div><div id="scheduleRows"></div><button type="button" id="addScheduleRow">➕ Aggiungi un altro giorno/orario</button>'+
+    '<h3>📅 Giorni, ora e durata</h3><div class="muted">Inserisci l’ora di inizio e la durata: l’ora di fine viene calcolata automaticamente.</div><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno</button>'+
     '<details><summary><b>Informazioni facoltative</b></summary>'+
       '<label>Età</label><input id="childAge" value="'+escapeHtml(c.age||"")+'">'+
       '<label>Classe</label><input id="childClass" value="'+escapeHtml(c.class||"")+'">'+
@@ -757,7 +731,7 @@ function addScheduleRow(item){
   const row = document.createElement("div");
   row.className = "row3 schedule-row";
   const mins=Math.max(30,Math.round(durationHours(item.start,item.end)*60));
-  row.innerHTML = '<div><label>Giorno</label><select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select></div>'+ '<div><label>Inizio</label><input class="schedule-start" type="time" value="'+item.start+'"></div>'+ '<div><label>Durata</label><div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button type="button" class="remove-schedule">×</button></div></div>'+ '<div class="muted schedule-end-preview" style="grid-column:1/-1">🕒 Fine calcolata automaticamente: '+item.end+'</div>';
+  row.innerHTML = '<select class="schedule-day">'+DAYS.map(function(day,index){return '<option value="'+index+'" '+(Number(item.day)===index?"selected":"")+'>'+day+'</option>';}).join("")+'</select>'+ '<input class="schedule-start" type="time" value="'+item.start+'">'+ '<div style="display:flex;gap:5px"><select class="schedule-duration"><option value="30">30 min</option><option value="60">1 ora</option><option value="90">1 ora e 30</option><option value="120">2 ore</option><option value="150">2 ore e 30</option><option value="180">3 ore</option></select><button class="remove-schedule">×</button></div>'+ '<div class="muted schedule-end-preview" style="grid-column:2/4">Fine: '+item.end+'</div>';
   document.getElementById("scheduleRows").appendChild(row);
   const dur=row.querySelector('.schedule-duration'); dur.value=String([30,60,90,120,150,180].includes(mins)?mins:60);
   function update(){ row.querySelector('.schedule-end-preview').textContent='Fine: '+addMinutes(row.querySelector('.schedule-start').value,Number(dur.value)); }
@@ -821,12 +795,8 @@ function renderChildDetail(){
     target.innerHTML = '<div class="empty">Seleziona un bambino o inseriscine uno nuovo.</div>';
     return;
   }
-  const childName=String(child.name||"").trim().toLowerCase();
-  const sessions = data.sessions.filter(function(s){
-    if(s.childId===child.id) return true;
-    const legacyName=String(s.childName||s.child||s.name||s.bambino||"").trim().toLowerCase();
-    return legacyName && legacyName===childName;
-  }).sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+  const sessions = data.sessions.filter(function(s){ return s.childId===child.id; })
+    .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
 
   target.innerHTML =
     '<div class="section-head">'+
@@ -899,26 +869,22 @@ function sessionFormHtml(){
 }
 
 function sessionHistoryHtml(sessions){
-  let html = '<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th>Azioni</th></tr>';
-
-  sessions.forEach(function(s){
-    html += '<tr>'+
-      '<td>'+escapeHtml(s.date)+'</td>'+
-      '<td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td>'+
-      '<td>'+escapeHtml(s.subject||s.work||s.lavoro||'—')+'<br><small>'+escapeHtml(s.workType||s.type||s.tipo||'')+'</small></td>'+
-      '<td>'+((s.location||"casa")==="studio"?"🏢 Studio":"🏠 Casa")+'</td>'+
-      '<td><select class="compact-select payment-select" data-session="'+s.id+'">'+
-        '<option value="false" '+(!s.paid?'selected':'')+'>🔴 Non pagato</option>'+
-        '<option value="true" '+(s.paid?'selected':'')+'>🟢 Pagato</option>'+
-      '</select></td>'+
-      '<td><button class="small-btn download-session" data-session="'+s.id+'">⬇️ Scarica</button> '+
-      '<button class="danger small-btn delete-session" data-session="'+s.id+'">🗑️</button></td>'+
-    '</tr>';
-  });
-
-  return html+'</table>';
+  return '<div class="table-wrap"><table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th>Azioni</th></tr>'+
+    sessions.map(function(s){
+      const subject=s.subject||s.work||"—";
+      const workType=s.workType||s.type||"";
+      const location=(s.location||"casa")==="studio"?"🏢 Studio":"🏠 Casa";
+      return '<tr>'+
+        '<td>'+escapeHtml(s.date||"")+'</td>'+
+        '<td>'+escapeHtml(s.start||"")+'–'+escapeHtml(s.end||"")+'</td>'+
+        '<td>'+escapeHtml(subject)+(workType?'<br><small>'+escapeHtml(workType)+'</small>':'')+'</td>'+
+        '<td>'+location+'</td>'+
+        '<td>'+(s.paid?'<span class="badge paid">🟢 Pagato</span>':'<span class="badge unpaid">🔴 Non pagato</span>')+'</td>'+
+        '<td>'+(!s.paid?'<button class="green mark-paid" data-id="'+s.id+'">✓ Pagato</button> ':'')+
+        '<button class="danger delete-session" data-id="'+s.id+'">🗑️</button></td>'+
+      '</tr>';
+    }).join("")+'</table></div>';
 }
-
 function downloadSession(sessionId){
   const session = data.sessions.find(function(s){ return s.id===sessionId; });
   if(!session) return;
