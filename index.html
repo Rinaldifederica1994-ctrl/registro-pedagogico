@@ -781,9 +781,7 @@ function saveChild(existingId){
     const conflict=overlaps(item.day,item.start,item.end,existingId);
     if(conflict.length){
       const alternatives=suggestedSlots(item.day,toMinutes(item.end)-toMinutes(item.start),3);
-      alert("⚠️ Sovrapposizione con: "+conflict.map(function(x){return x.name+" ("+x.start+"–"+x.end+")";}).join(", ")+".
-
-Slot alternativi: "+(alternatives.join(" · ")||"nessuno")); return;
+      alert("⚠️ Sovrapposizione con: "+conflict.map(function(x){return x.name+" ("+x.start+"–"+x.end+")";}).join(", ")+".\n\nSlot alternativi: "+(alternatives.join(" · ")||"nessuno")); return;
     }
   }
 
@@ -1112,9 +1110,7 @@ function openCommitmentForm(day,start){
     const dayValue=Number(document.getElementById("commitmentDay").value);
     if(!isWithinAvailability(dayValue,startValue,endValue)){ alert("⚠️ Questo orario è fuori dalla tua disponibilità impostata."); return; }
     const conflict=overlaps(dayValue,startValue,endValue);
-    if(conflict.length){ const alt=suggestedSlots(dayValue,toMinutes(endValue)-toMinutes(startValue),3); alert("⚠️ Si sovrappone a "+conflict.map(function(x){return x.name+" "+x.start+"–"+x.end;}).join(", ")+".
-
-Slot alternativi: "+(alt.join(" · ")||"nessuno")); return; }
+    if(conflict.length){ const alt=suggestedSlots(dayValue,toMinutes(endValue)-toMinutes(startValue),3); alert("⚠️ Si sovrappone a "+conflict.map(function(x){return x.name+" "+x.start+"–"+x.end;}).join(", ")+".\n\nSlot alternativi: "+(alt.join(" · ")||"nessuno")); return; }
 
     data.commitments.push({
       id:uid(),
