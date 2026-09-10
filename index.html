@@ -124,7 +124,7 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
     <div class="panel">
       <div class="section-head">
         <div><h2>📅 Agenda settimanale</h2><div class="muted">Clicca su uno spazio libero per aggiungere un'attività</div></div>
-        <div class="actions"><button id="editAvailability">⏰ I miei orari</button><button class="primary" id="addCommitment">➕ Aggiungi impegno</button></div>
+        <div class="actions"><button class="primary" id="addCommitment">➕ Aggiungi impegno</button></div>
       </div>
       <div class="agenda-wrap"><div class="agenda" id="agendaGrid"></div></div>
     </div>
@@ -478,35 +478,32 @@ document.querySelectorAll(".tab").forEach(function(tab){
 
 function childNextMeeting(child){
   const now=new Date();
-  const schedules=Array.isArray(child.schedule)?child.schedule:[];
-  let best=null;
-  schedules.forEach(function(s){
+  const list=Array.isArray(child.schedule)?child.schedule:[];
+  let bestTime=Number.POSITIVE_INFINITY;
+  list.forEach(function(s){
+    if(!s || s.day===undefined || !s.start) return;
     const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-    const todayDay=(today.getDay()+6)%7; // lunedì = 0
+    const todayDay=(today.getDay()+6)%7;
     let diff=(Number(s.day)-todayDay+7)%7;
-    const d=new Date(today);
-    d.setDate(today.getDate()+diff);
-    if(s.start){
-      const p=s.start.split(":").map(Number);
-      d.setHours(p[0],p[1],0,0);
-      if(d<now) d.setDate(d.getDate()+7);
-    }
-    if(!best||d<best) best=d;
+    const p=String(s.start).split(":").map(Number);
+    const candidate=new Date(today);
+    candidate.setDate(today.getDate()+diff);
+    candidate.setHours(p[0]||0,p[1]||0,0,0);
+    if(candidate<now) candidate.setDate(candidate.getDate()+7);
+    bestTime=Math.min(bestTime,candidate.getTime());
   });
-  return best;
+  return bestTime;
 }
-function sortChildrenByNextMeeting(children){
-  return children.slice().sort(function(a,b){
-    const da=childNextMeeting(a), db=childNextMeeting(b);
-    if(da&&!db)return -1;
-    if(!da&&db)return 1;
-    if(!da&&!db)return (a.name||"").localeCompare(b.name||"");
-    return da-db;
+function orderedChildren(){
+  return data.children.slice().sort(function(a,b){
+    const aa=childNextMeeting(a), bb=childNextMeeting(b);
+    if(aa===bb) return String(a.name||"").localeCompare(String(b.name||""));
+    return aa-bb;
   });
 }
 
 function renderChildLists(){
-  const html = data.children.length ? sortChildrenByNextMeeting(data.children).map(function(child){
+  const html = data.children.length ? orderedChildren().map(function(child){
     return '<div class="child-item '+(selectedChildId===child.id?"selected":"")+'" style="--child:'+child.color+'" data-child="'+child.id+'">'+
       '<span><b>'+escapeHtml(child.name)+'</b><br><small class="muted">'+(child.fixed===false?"Non fisso":"Fisso")+'</small></span>'+
       '</div>';
@@ -1017,34 +1014,49 @@ function deleteChild(childId){
 }
 
 function editCommitment(id){
-  const item=data.commitments.find(function(x){return x.id===id;});
-  if(!item){alert("Impegno non trovato.");return;}
+  const item=data.commitments.find(function(x){ return x.id===id; });
+  if(!item){ alert("Impegno non trovato."); return; }
+
   showModal(
     '<h2>✏️ Modifica impegno</h2>'+
     '<label>Tipo</label><select id="commitmentType">'+
-      ['Bambino occasionale','Spostamento','Studio / Sede','Scuola','Impegno personale'].map(function(v){
-        return '<option value="'+v+'" '+(item.type===v?'selected':'')+'>'+v+'</option>';
-      }).join("")+'</select>'+
-    '<label>Nome / descrizione</label><input id="commitmentName" value="'+escapeHtml(item.name||'')+'">'+
+      '<option value="Bambino occasionale" '+(item.type==="Bambino occasionale"?"selected":"")+'>👤 Bambino</option>'+
+      '<option value="Spostamento" '+(item.type==="Spostamento"?"selected":"")+'>🚗 Spostamento</option>'+
+      '<option value="Studio / Sede" '+(item.type==="Studio / Sede"?"selected":"")+'>🏢 Studio / Sede</option>'+
+      '<option value="Scuola" '+(item.type==="Scuola"?"selected":"")+'>🏫 Scuola</option>'+
+      '<option value="Impegno personale" '+(item.type==="Impegno personale"?"selected":"")+'>📌 Impegno personale</option>'+
+    '</select>'+
+    '<label>Nome / descrizione</label><input id="commitmentName" value="'+escapeHtml(item.name||"")+'">'+
     '<div class="row3">'+
       '<div><label>Giorno</label><select id="commitmentDay">'+DAYS.map(function(d,i){
-        return '<option value="'+i+'" '+(i===Number(item.day)?'selected':'')+'>'+d+'</option>';
+        return '<option value="'+i+'" '+(Number(item.day)===i?"selected":"")+'>'+d+'</option>';
       }).join("")+'</select></div>'+
-      '<div><label>Dalle</label><input id="commitmentStart" type="time" value="'+item.start+'"></div>'+
-      '<div><label>Alle</label><input id="commitmentEnd" type="time" value="'+item.end+'"></div>'+
+      '<div><label>Dalle</label><input id="commitmentStart" type="time" value="'+(item.start||"08:00")+'"></div>'+
+      '<div><label>Alle</label><input id="commitmentEnd" type="time" value="'+(item.end||"09:00")+'"></div>'+
     '</div>'+
-    '<div class="actions"><button class="primary" id="saveCommitment">💾 Salva modifiche</button><button id="cancelCommitment">Annulla</button></div>'
+    '<div class="actions"><button class="primary" id="saveCommitment">💾 Salva modifiche</button><button class="danger" id="deleteCommitment">🗑️ Elimina impegno</button><button id="cancelCommitment">Annulla</button></div>'
   );
+
   document.getElementById("cancelCommitment").onclick=closeModal;
+  document.getElementById("deleteCommitment").onclick=function(){
+    if(!confirm("Vuoi eliminare questo impegno dall'agenda?")) return;
+    data.commitments=data.commitments.filter(function(x){ return x.id!==id; });
+    closeModal();
+    renderAll();
+  };
   document.getElementById("saveCommitment").onclick=function(){
-    const start=document.getElementById("commitmentStart").value;
-    const end=document.getElementById("commitmentEnd").value;
-    const day=Number(document.getElementById("commitmentDay").value);
-    if(!start||!end||start>=end){alert("Controlla gli orari.");return;}
+    const startValue=document.getElementById("commitmentStart").value;
+    const endValue=document.getElementById("commitmentEnd").value;
+    if(!startValue || !endValue || startValue>=endValue){
+      alert("Controlla gli orari."); return;
+    }
     item.type=document.getElementById("commitmentType").value;
-    item.name=document.getElementById("commitmentName").value.trim()||item.type;
-    item.day=day; item.start=start; item.end=end;
-    closeModal(); renderAll();
+    item.name=document.getElementById("commitmentName").value.trim() || item.type;
+    item.day=Number(document.getElementById("commitmentDay").value);
+    item.start=startValue;
+    item.end=endValue;
+    closeModal();
+    renderAll();
   };
 }
 
@@ -1105,9 +1117,8 @@ function renderAgenda(){
           const event = events[0];
           const showText = slotStart === toMinutes(event.start);
           html += '<div class="slot" data-day="'+day+'" data-time="'+time+'">'+
-            '<div class="event" '+(event.type==="commitment"
-              ? 'data-edit-commitment="'+event.id+'" style="cursor:pointer;--event:'+event.color+'"'
-              : 'style="--event:'+event.color+'"')+'>'+
+            '<div class="event" style="--event:'+event.color+'"'+
+            (event.type==="commitment"?' data-edit-commitment="'+event.id+'"':'')+'>'+
             (showText
               ? '<b>'+escapeHtml(event.name)+'</b><br>'+event.start+'–'+event.end
               : '&nbsp;')+
@@ -1127,10 +1138,11 @@ function renderAgenda(){
       openCommitmentForm(Number(slot.dataset.day),slot.dataset.time);
     });
   });
-  document.querySelectorAll("[data-edit-commitment]").forEach(function(el){
-    el.addEventListener("click",function(e){
-      e.stopPropagation();
-      editCommitment(el.dataset.editCommitment);
+
+  document.querySelectorAll("[data-edit-commitment]").forEach(function(eventBox){
+    eventBox.addEventListener("click",function(ev){
+      ev.stopPropagation();
+      editCommitment(eventBox.dataset.editCommitment);
     });
   });
 }
