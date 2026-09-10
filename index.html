@@ -169,7 +169,9 @@ async function initFirebase(){
   try{
     const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
     firestore = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
+    const firebaseAuth = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
     const app = firebaseApp.initializeApp(firebaseConfig);
+    const auth = firebaseAuth.getAuth(app);
     db = firestore.getFirestore(app);
 
     const ref = firestore.doc(db,"registroPedagogico","archivio");
