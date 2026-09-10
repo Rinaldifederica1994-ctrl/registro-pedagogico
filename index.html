@@ -113,9 +113,11 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 
 <section id="money" class="view">
   <div class="cards">
-    <div class="card"><b>💰 Maturato</b><div class="metric" id="earned">€0,00</div><div class="muted">sessioni svolte</div></div>
-    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">sessioni pagate</div></div>
-    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">sessioni non pagate</div></div>
+    <div class="card"><b>⏱️ Ore previste questa settimana</b><div class="metric" id="weekPlanned">0 h</div><div class="muted">tutti i bambini attivi</div></div>
+    <div class="card"><b>✅ Ore effettive questa settimana</b><div class="metric" id="weekActual">0 h</div><div class="muted">sessioni realmente svolte</div></div>
+    <div class="card"><b>💰 Maturato</b><div class="metric" id="earned">€0,00</div><div class="muted">ore realmente svolte</div></div>
+    <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0,00</div><div class="muted">ore già pagate</div></div>
+    <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0,00</div><div class="muted">ore non ancora pagate</div></div>
   </div>
   <div class="panel" style="margin-top:16px"><h3>Dettaglio per bambino</h3><div class="table-wrap" id="moneyTable"></div></div>
 </section>
@@ -269,18 +271,79 @@ function renderChildren(){
   document.getElementById("childrenList").innerHTML=html||'<div class="empty">Ancora nessun bambino.</div>';
   document.querySelectorAll("[data-child]").forEach(e=>e.addEventListener("click",()=>{selectedChildId=e.dataset.child;renderChildren();renderChildDetail()}));
 }
+function weekBounds(){
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const day=today.getDay()===0?7:today.getDay();
+  const monday=new Date(today);monday.setDate(today.getDate()-day+1);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
+  return {monday,sunday};
+}
+function dateInCurrentWeek(value){
+  if(!value)return false;
+  const p=String(value).split("-").map(Number);
+  const d=new Date(p[0],p[1]-1,p[2]);
+  const b=weekBounds();
+  return d>=b.monday&&d<=b.sunday;
+}
+function formatHours(v){
+  const mins=Math.round((Number(v)||0)*60),h=Math.floor(mins/60),m=mins%60;
+  if(!h)return m+" min";
+  return m?h+" h "+m+" min":h+" h";
+}
+function childPlannedWeekHours(c){
+  if(c.fixed===false&&c.active===false)return 0;
+  return (Array.isArray(c.schedule)?c.schedule:[]).reduce((t,s)=>t+duration(s.start,s.end),0);
+}
+function childActualWeekHours(id){
+  return data.sessions.filter(s=>s.childId===id&&dateInCurrentWeek(s.date))
+    .reduce((t,s)=>t+duration(s.start,s.end),0);
+}
+function childPaidHours(id){
+  return data.sessions.filter(s=>s.childId===id&&s.paid)
+    .reduce((t,s)=>t+duration(s.start,s.end),0);
+}
+function totalPlannedWeekHours(){
+  return data.children.reduce((t,c)=>t+childPlannedWeekHours(c),0);
+}
+function totalActualWeekHours(){
+  return data.children.reduce((t,c)=>t+childActualWeekHours(c.id),0);
+}
 function childMoney(id){
-  const c=child(id),rate=Number(c?.rate)||0;let earned=0,received=0;
-  data.sessions.filter(s=>s.childId===id).forEach(s=>{const amount=duration(s.start,s.end)*rate;earned+=amount;if(s.paid)received+=amount});
-  return {earned,received,due:earned-received};
+  const c=child(id),rate=Number(c?.rate)||0;let earned=0,received=0,unpaidHours=0;
+  data.sessions.filter(s=>s.childId===id).forEach(s=>{
+    const h=duration(s.start,s.end),amount=h*rate;
+    earned+=amount;
+    if(s.paid)received+=amount;else unpaidHours+=h;
+  });
+  return {earned,received,due:earned-received,paidHours:childPaidHours(id),unpaidHours};
+}
+function sessionOptions(values){
+  return values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("")+'<option value="Altro">Altro</option>';
 }
 function renderChildDetail(){
   const target=document.getElementById("childDetail"),c=child(selectedChildId);
   if(!c){target.innerHTML='<div class="empty">Seleziona un bambino.</div>';return}
-  const money=childMoney(c.id), sessions=data.sessions.filter(s=>s.childId===c.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const money=childMoney(c.id);
+  const planned=childPlannedWeekHours(c),actual=childActualWeekHours(c.id);
+  const sessions=data.sessions.filter(s=>s.childId===c.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   target.innerHTML=`
-    <div class="section-head"><div><h2 style="border-left:9px solid ${c.color};padding-left:10px">${esc(c.name)}</h2><div class="muted">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}</div></div><div><button id="editChild">✏️ Modifica</button><button class="danger" id="deleteChild">🗑️</button></div></div>
-    <div class="card"><div class="section-head"><b>💶 Compenso</b><button id="toggleChildMoney">Mostra</button></div><div id="childMoneyBox" class="money-hidden"><div class="cards"><div><b>Maturato</b><div class="metric">${euro(money.earned)}</div></div><div><b>Incassato</b><div class="metric">${euro(money.received)}</div></div><div><b>Mi deve</b><div class="metric">${euro(money.due)}</div></div></div></div></div>
+    <div class="section-head"><div><h2 style="border-left:9px solid ${c.color};padding-left:10px">${esc(c.name)}</h2><div class="muted">${locationIcon(c.location||"casa")} · ${c.fixed===false?"Occasionale":"Fisso"}${c.fixed===false?" · "+(c.active===false?"Non attivo questa settimana":"Attivo questa settimana"):""}</div></div><div><button id="editChild">✏️ Modifica</button><button class="danger" id="deleteChild">🗑️</button></div></div>
+    <div class="cards">
+      <div class="card"><b>⏱️ Ore previste</b><div class="metric">${formatHours(planned)}</div><div class="muted">questa settimana</div></div>
+      <div class="card"><b>✅ Ore effettive</b><div class="metric">${formatHours(actual)}</div><div class="muted">questa settimana</div></div>
+      <div class="card"><b>📌 Da fare</b><div class="metric">${formatHours(Math.max(0,planned-actual))}</div><div class="muted">differenza settimanale</div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="section-head"><b>💶 Ore e pagamenti</b><button id="toggleChildMoney">Mostra</button></div>
+      <div id="childMoneyBox" class="money-hidden"><div class="cards">
+        <div><b>Compenso orario</b><div class="metric">${euro(c.rate)}/h</div></div>
+        <div><b>Ore pagate</b><div class="metric">${formatHours(money.paidHours)}</div></div>
+        <div><b>Ore da pagare</b><div class="metric">${formatHours(money.unpaidHours)}</div></div>
+        <div><b>Maturato</b><div class="metric">${euro(money.earned)}</div></div>
+        <div><b>Incassato</b><div class="metric">${euro(money.received)}</div></div>
+        <div><b>Mi deve</b><div class="metric">${euro(money.due)}</div></div>
+      </div></div>
+    </div>
     ${sessionFormHtml(c)}
     <h3 style="margin-top:20px">📚 Storico sessioni</h3>
     <div class="table-wrap">${sessions.length?historyHtml(sessions):'<div class="empty">Nessuna sessione salvata.</div>'}</div>`;
@@ -293,18 +356,23 @@ function renderChildDetail(){
 }
 function sessionFormHtml(c){return `<div class="panel" style="margin-top:16px"><h3>➕ Nuova sessione</h3>
 <div class="row3"><div><label>Data</label><input id="sDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label>Dalle</label><input id="sStart" type="time" value="15:00"></div><div><label>Alle</label><input id="sEnd" type="time" value="16:00"></div></div>
-<div class="row2"><div><label>Materia / attività</label><input id="sSubject" placeholder="Es. Italiano"></div><div><label>Tipo di lavoro</label><select id="sWork"><option>Compiti</option><option>Potenziamento</option><option>Recupero</option><option>Ripasso</option><option>Metodo di studio</option><option>Attività educativa</option></select></div></div>
-<div class="row2"><div><label>Comportamento / osservazioni</label><textarea id="sNotes"></textarea></div><div><label>Per la prossima volta</label><textarea id="sNext"></textarea></div></div>
-<div class="row2"><div><label>Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
+<div class="row2"><div><label>😊 Come è oggi?</label><select id="sMood">${sessionOptions(["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])}</select></div><div><label>📚 Lavoro di oggi</label><select id="sSubject">${sessionOptions(["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])}</select></div></div>
+<div class="row2"><div><label>🎯 Tipo di lavoro</label><select id="sWork">${sessionOptions(["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])}</select></div><div><label>👀 Attenzione</label><select id="sAttention">${sessionOptions(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</select></div></div>
+<div class="row2"><div><label>🤝 Collaborazione</label><select id="sCollaboration">${sessionOptions(["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])}</select></div><div><label>💶 Pagamento</label><select id="sPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div></div>
+<div class="row2"><div><label>📍 Luogo</label><select id="sLocation"><option value="casa" ${(c.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>✏️ Altro (solo se serve)</label><input id="sOther" placeholder="Scrivi qui la tua voce personalizzata"></div></div>
+<label>📝 Note / comportamento</label><textarea id="sNotes"></textarea>
+<label>📌 Cose da fare per la prossima volta</label><textarea id="sNext"></textarea>
 <div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div></div>`}
-function historyHtml(list){return `<table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th></th></tr>${list.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.start)}–${esc(s.end)}</td><td>${esc(s.subject||"")}<br><small>${esc(s.workType||"")}</small></td><td>${locationIcon(s.location||"casa")}</td><td>${s.paid?'<span class="badge paid">Pagato</span>':'<span class="badge unpaid">Non pagato</span>'}</td><td>${!s.paid?`<button class="green mark-paid" data-id="${s.id}">✓</button>`:""} <button class="danger delete-session" data-id="${s.id}">🗑️</button></td></tr>`).join("")}</table>`}
+function historyHtml(list){return `<table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Lavoro</th><th>Luogo</th><th>Pagamento</th><th></th></tr>${list.map(s=>`<tr><td>${esc(s.date)}</td><td>${esc(s.start)}–${esc(s.end)}</td><td>${formatHours(duration(s.start,s.end))}</td><td>${esc(s.subject||"")}<br><small>${esc(s.workType||"")}</small></td><td>${locationIcon(s.location||"casa")}</td><td>${s.paid?'<span class="badge paid">Pagato</span>':'<span class="badge unpaid">Non pagato</span>'}</td><td>${!s.paid?`<button class="green mark-paid" data-id="${s.id}">✓ Pagato</button>`:""} <button class="danger delete-session" data-id="${s.id}">🗑️</button></td></tr>`).join("")}</table>`}
 function saveSession(){
   const start=document.getElementById("sStart").value,end=document.getElementById("sEnd").value;
   if(!selectedChildId||!start||!end||start>=end){alert("Controlla gli orari.");return}
-  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,subject:document.getElementById("sSubject").value.trim(),workType:document.getElementById("sWork").value,notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
+  const other=document.getElementById("sOther").value.trim();
+  const val=id=>{const v=document.getElementById(id).value;return v==="Altro"&&other?other:v};
+  data.sessions.push({id:uid(),childId:selectedChildId,date:document.getElementById("sDate").value,start,end,mood:val("sMood"),subject:val("sSubject"),workType:val("sWork"),attention:val("sAttention"),collaboration:val("sCollaboration"),notes:document.getElementById("sNotes").value,next:document.getElementById("sNext").value,location:document.getElementById("sLocation").value,paid:document.getElementById("sPaid").value==="true"});
   renderAll();
 }
-function markPaid(id){const s=data.sessions.find(x=>x.id===id);if(s){s.paid=true;renderAll()}}
+function markPaid(id){const s=data.sessions.find(x=>x.id===id);if(s&&confirm("Confermi che questa sessione è stata pagata?")){s.paid=true;s.paidDate=new Date().toISOString().slice(0,10);renderAll()}}
 function deleteSession(id){if(confirm("Eliminare questa sessione?")){data.sessions=data.sessions.filter(s=>s.id!==id);renderAll()}}
 function deleteChild(id){if(confirm("Eliminare il bambino e tutto il suo storico?")){data.children=data.children.filter(c=>c.id!==id);data.sessions=data.sessions.filter(s=>s.childId!==id);selectedChildId=null;renderAll()}}
 
@@ -359,19 +427,36 @@ function openEditAgenda(id){
 }
 function addMin(t,n){return minTime(toMin(t)+n)}
 
+function addChildScheduleRow(container,item={day:0,start:"15:00",end:"16:00",location:"casa"}){
+  const row=document.createElement("div");row.className="row3 schedule-row";
+  row.innerHTML=`<select class="sch-day">${DAYS.map((d,i)=>`<option value="${i}" ${Number(item.day)===i?"selected":""}>${d}</option>`).join("")}</select>
+  <input class="sch-start" type="time" value="${item.start||"15:00"}">
+  <div style="display:flex;gap:6px"><input class="sch-end" type="time" value="${item.end||"16:00"}"><button type="button" class="remove-sch">×</button></div>
+  <select class="sch-location" style="grid-column:1/-1"><option value="casa" ${(item.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(item.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select>`;
+  container.appendChild(row);row.querySelector(".remove-sch").onclick=()=>row.remove();
+}
 function openChildForm(c=null){
   const isEdit=!!c;
   modal(`<h2>${isEdit?"✏️ Modifica":"➕ Nuovo"} bambino</h2>
-  <div class="row2"><div><label>Nome</label><input id="cName" value="${esc(c?.name||"")}"></div><div><label>Compenso orario</label><input id="cRate" type="number" min="0" step="0.01" value="${Number(c?.rate)||0}"></div></div>
-  <div class="row2"><div><label>Segue</label><select id="cLocation"><option value="casa" ${(c?.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c?.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>Tipo</label><select id="cFixed"><option value="true" ${c?.fixed!==false?"selected":""}>Fisso</option><option value="false" ${c?.fixed===false?"selected":""}>Occasionale</option></select></div></div>
+  <div class="row2"><div><label>Nome</label><input id="cName" value="${esc(c?.name||"")}"></div><div><label>Compenso orario (€)</label><input id="cRate" type="number" min="0" step="0.01" value="${Number(c?.rate)||0}"></div></div>
+  <div class="row2"><div><label>Luogo abituale</label><select id="cLocation"><option value="casa" ${(c?.location||"casa")==="casa"?"selected":""}>🏠 A casa</option><option value="studio" ${(c?.location||"casa")==="studio"?"selected":""}>🏢 In studio</option></select></div><div><label>È fisso ogni settimana?</label><select id="cFixed"><option value="true" ${c?.fixed!==false?"selected":""}>Sì</option><option value="false" ${c?.fixed===false?"selected":""}>No</option></select></div></div>
+  <label>Questa settimana è attivo?</label><select id="cActive"><option value="true" ${c?.active!==false?"selected":""}>Sì</option><option value="false" ${c?.active===false?"selected":""}>No</option></select>
+  <h3>📅 Giorni e orari previsti</h3><div class="note">Queste ore servono per calcolare automaticamente le ore che dovevi fare ogni settimana.</div><div id="childScheduleRows" style="margin-top:10px"></div><button type="button" id="addChildSchedule">➕ Aggiungi giorno e orario</button>
+  <details style="margin-top:18px"><summary><b>Informazioni del bambino</b></summary>
   <div class="row2"><div><label>Età</label><input id="cAge" value="${esc(c?.age||"")}"></div><div><label>Classe</label><input id="cClass" value="${esc(c?.class||"")}"></div></div>
   <label>Scuola</label><input id="cSchool" value="${esc(c?.school||"")}">
-  <label>Obiettivi / note pedagogiche</label><textarea id="cNotes">${esc(c?.notes||"")}</textarea>
-  <div class="actions"><button class="primary" id="saveChild">Salva</button><button id="cancelModal">Annulla</button></div>`);
+  <label>Obiettivi</label><textarea id="cGoals">${esc(c?.goals||"")}</textarea>
+  <label>Note pedagogiche</label><textarea id="cNotes">${esc(c?.notes||"")}</textarea></details>
+  <div class="actions"><button class="primary" id="saveChild">💾 Salva</button><button id="cancelModal">Annulla</button></div>`);
+  const box=document.getElementById("childScheduleRows");
+  const rows=Array.isArray(c?.schedule)&&c.schedule.length?c.schedule:[{day:0,start:"15:00",end:"16:00",location:c?.location||"casa"}];
+  rows.forEach(r=>addChildScheduleRow(box,r));
+  document.getElementById("addChildSchedule").onclick=()=>addChildScheduleRow(box,{location:document.getElementById("cLocation").value});
   document.getElementById("cancelModal").onclick=closeModal;
   document.getElementById("saveChild").onclick=()=>{
     const name=document.getElementById("cName").value.trim();if(!name){alert("Inserisci il nome.");return}
-    const obj={id:c?.id||uid(),name,rate:Number(document.getElementById("cRate").value)||0,location:document.getElementById("cLocation").value,fixed:document.getElementById("cFixed").value==="true",age:document.getElementById("cAge").value,class:document.getElementById("cClass").value,school:document.getElementById("cSchool").value,notes:document.getElementById("cNotes").value,color:c?.color||COLORS[data.children.length%COLORS.length],schedule:c?.schedule||[]};
+    const schedule=[...document.querySelectorAll(".schedule-row")].map(r=>({id:uid(),day:Number(r.querySelector(".sch-day").value),start:r.querySelector(".sch-start").value,end:r.querySelector(".sch-end").value,location:r.querySelector(".sch-location").value})).filter(s=>s.start&&s.end&&s.start<s.end);
+    const obj={id:c?.id||uid(),name,rate:Number(document.getElementById("cRate").value)||0,location:document.getElementById("cLocation").value,fixed:document.getElementById("cFixed").value==="true",active:document.getElementById("cActive").value==="true",age:document.getElementById("cAge").value,class:document.getElementById("cClass").value,school:document.getElementById("cSchool").value,goals:document.getElementById("cGoals").value,notes:document.getElementById("cNotes").value,color:c?.color||COLORS[data.children.length%COLORS.length],schedule};
     if(c)Object.assign(c,obj);else data.children.push(obj);selectedChildId=obj.id;closeModal();renderAll();
   };
 }
@@ -382,10 +467,20 @@ function openAvailability(){
   document.getElementById("saveAvailability").onclick=()=>{const s=document.getElementById("avStart").value,e=document.getElementById("avEnd").value;if(!s||!e||s>=e){alert("Controlla gli orari.");return}data.availability={start:s,end:e};closeModal();renderAll()};
 }
 function renderMoney(){
-  let earned=0,received=0;const rows=data.children.map(c=>{const m=childMoney(c.id);earned+=m.earned;received+=m.received;return `<tr><td><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</td><td>${euro(m.earned)}</td><td>${euro(m.received)}</td><td>${euro(m.due)}</td></tr>`}).join("");
-  document.getElementById("earned").textContent=euro(earned);document.getElementById("received").textContent=euro(received);document.getElementById("due").textContent=euro(earned-received);
-  document.getElementById("moneyTable").innerHTML=rows?`<table><tr><th>Bambino</th><th>Maturato</th><th>Incassato</th><th>Da ricevere</th></tr>${rows}</table>`:'<div class="empty">Ancora nessun dato.</div>';
+  let earned=0,received=0;
+  const rows=data.children.map(c=>{
+    const m=childMoney(c.id),planned=childPlannedWeekHours(c),actual=childActualWeekHours(c.id);
+    earned+=m.earned;received+=m.received;
+    return `<tr><td><span class="color-dot" style="background:${c.color}"></span>${esc(c.name)}</td><td>${formatHours(planned)}</td><td>${formatHours(actual)}</td><td>${formatHours(Math.max(0,planned-actual))}</td><td>${formatHours(m.paidHours)}</td><td>${formatHours(m.unpaidHours)}</td><td>${euro(m.earned)}</td><td>${euro(m.received)}</td><td>${euro(m.due)}</td></tr>`;
+  }).join("");
+  document.getElementById("weekPlanned").textContent=formatHours(totalPlannedWeekHours());
+  document.getElementById("weekActual").textContent=formatHours(totalActualWeekHours());
+  document.getElementById("earned").textContent=euro(earned);
+  document.getElementById("received").textContent=euro(received);
+  document.getElementById("due").textContent=euro(earned-received);
+  document.getElementById("moneyTable").innerHTML=rows?`<table><tr><th>Bambino</th><th>Ore previste</th><th>Ore effettive</th><th>Da fare</th><th>Ore pagate</th><th>Ore da pagare</th><th>Maturato</th><th>Incassato</th><th>Mi deve</th></tr>${rows}</table>`:'<div class="empty">Ancora nessun dato.</div>';
 }
+
 function modal(html){document.getElementById("modalContent").innerHTML=html;document.getElementById("modal").classList.add("show")}
 function closeModal(){document.getElementById("modal").classList.remove("show")}
 document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
