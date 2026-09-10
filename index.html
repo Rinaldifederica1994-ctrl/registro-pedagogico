@@ -68,6 +68,11 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 
 .schedule-row{margin:12px 0;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa}
 .sch-end-preview{background:#f3f4f6}
+
+.day-children-group{margin:18px 0;padding:14px;border:1px solid #e5e7eb;border-radius:14px;background:#fff}
+.day-children-group h3{margin:0 0 10px}
+.day-children-items{display:flex;flex-direction:column;gap:8px}
+.child-item{text-align:left;width:100%;padding:12px;border-radius:10px;background:#fafafa}
 </style>
 </head>
 <body style="display:none;">
@@ -1064,6 +1069,19 @@ function renderAgenda(){
     });
   });
 }
+document.querySelectorAll(".delete-agenda-item").forEach(function(btn){
+  btn.onclick=function(){
+    const id=btn.dataset.id;
+    if(!id) return;
+    if(confirm("Vuoi eliminare questo impegno dall'agenda?")){
+      data.agenda=(data.agenda||[]).filter(function(x){return x.id!==id;});
+      data.appointments=(data.appointments||[]).filter(function(x){return x.id!==id;});
+      data.events=(data.events||[]).filter(function(x){return x.id!==id;});
+      renderAll();
+    }
+  };
+});
+
 function addMinutes(time,minutes){
   const total = toMinutes(time)+minutes;
   return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
@@ -1195,6 +1213,20 @@ document.addEventListener("click",function(event){
   if(event.target && event.target.id==="toggleMoneyForecast"){
     const box=document.getElementById("moneyForecastHidden"); if(box) box.classList.toggle("hidden");
     event.target.textContent=box && box.classList.contains("hidden")?"💶 Compensi ▾":"💶 Compensi ▴";
+  }
+});
+
+
+document.addEventListener("click",function(e){
+  const btn=e.target.closest && e.target.closest("[data-delete-agenda]");
+  if(!btn) return;
+  const id=btn.dataset.deleteAgenda;
+  if(!id) return;
+  if(confirm("Vuoi eliminare questo impegno dall'agenda?")){
+    ["agenda","appointments","events","commitments"].forEach(function(key){
+      if(Array.isArray(data[key])) data[key]=data[key].filter(function(item){return item.id!==id;});
+    });
+    renderAll();
   }
 });
 
