@@ -11,7 +11,7 @@
   --red:#d85b66; --orange:#e99a2e;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+body{display:none;margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 h1,h2,h3,p{margin-top:0}.brand{font-size:24px;font-weight:800;color:var(--primary)}
 .subtitle{font-size:13px;color:var(--muted);margin-top:4px}
@@ -163,96 +163,78 @@ const firebaseConfig = {
 
 let db = null;
 let firestore = null;
+let auth = null;
 let cloudLoaded = false;
 
 async function initFirebase() {
-    try {
-        const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
-        firestore = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
-        const firebaseAuth = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
+  try {
+    const firebaseApp = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js");
+    firestore = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js");
+    const firebaseAuth = await import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js");
 
-        const app = firebaseApp.initializeApp(firebaseConfig);
+    const app = firebaseApp.initializeApp(firebaseConfig);
+    auth = firebaseAuth.getAuth(app);
+    db = firestore.getFirestore(app);
 
-        auth = firebaseAuth.getAuth(app);
+    // L'accesso resta valido fino alla chiusura del browser.
+    await firebaseAuth.setPersistence(auth, firebaseAuth.browserSessionPersistence);
 
-        // Mantiene l'accesso solo finché il browser resta aperto
-        await firebaseAuth.setPersistence(
-            auth,
-            firebaseAuth.browserSessionPersistence
-        );
+    // Controlla se esiste gia' una sessione.
+    const user = await new Promise(resolve => {
+      const unsubscribe = firebaseAuth.onAuthStateChanged(auth, currentUser => {
+        unsubscribe();
+        resolve(currentUser);
+      });
+    });
 
-        db = firestore.getFirestore(app);
+    // Se non c'e' una sessione, chiede email e password.
+    if (!user) {
+      const email = prompt("Inserisci la tua email:");
+      if (!email) {
+        alert("Accesso annullato.");
+        return;
+      }
 
-        // Aspetta che Firebase controlli se esiste già una sessione
-        let user = await new Promise(resolve => {
-            const unsubscribe = firebaseAuth.onAuthStateChanged(auth, currentUser => {
-                unsubscribe();
-                resolve(currentUser);
-            });
-        });
+      const password = prompt("Inserisci la password:");
+      if (!password) {
+        alert("Accesso annullato.");
+        return;
+      }
 
-        // Se non è ancora stato effettuato l'accesso
-        if (!user) {
-            const email = prompt("Inserisci la tua email:");
-
-            if (!email) {
-                alert("Accesso annullato.");
-                return;
-            }
-
-            const password = prompt("Inserisci la password:");
-
-            if (!password) {
-                alert("Accesso annullato.");
-                return;
-            }
-
-            await firebaseAuth.signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-        }
-
-        // Carica l'archivio online
-        const ref = firestore.doc(db, "registroPedagogico", "archivio");
-        const snapshot = await firestore.getDoc(ref);
-
-        if (snapshot.exists()) {
-            const cloudData = snapshot.data();
-
-            if (cloudData) {
-                data = {
-                    ...data,
-                    ...cloudData
-                };
-            }
-        } else {
-            // Se l'archivio online non esiste ancora, lo crea
-            await firestore.setDoc(ref, data);
-        }
-
-        cloudLoaded = true;
-
-        // Ora che l'accesso è riuscito mostra l'app
-        document.body.style.display = "block";
-
-        renderAll();
-
-    } catch (error) {
-
-        console.error("Errore Firebase:", error);
-
-        alert("⚠️ Errore Firebase: " + error.message);
-
-        // In caso di errore mostra comunque l'app
-        document.body.style.display = "block";
-
-        cloudLoaded = false;
-
-        renderAll();
+      await firebaseAuth.signInWithEmailAndPassword(auth, email.trim(), password);
     }
 
+    // Solo dopo l'accesso carica l'archivio online.
+    const ref = firestore.doc(db, "registroPedagogico", "archivio");
+    const snapshot = await firestore.getDoc(ref);
+
+    if (snapshot.exists()) {
+      const cloudData = snapshot.data();
+      if (cloudData) {
+        data = {
+          children: Array.isArray(cloudData.children) ? cloudData.children : [],
+          sessions: Array.isArray(cloudData.sessions) ? cloudData.sessions : [],
+          commitments: Array.isArray(cloudData.commitments) ? cloudData.commitments : []
+        };
+        localStorage.setItem("registroPedagogicoV2", JSON.stringify(data));
+      }
+    } else {
+      await firestore.setDoc(ref, data);
+    }
+
+    cloudLoaded = true;
+    renderAll();
+
+    // L'app viene mostrata SOLO dopo login e caricamento archivio.
+    document.body.style.display = "block";
+
+  } catch (error) {
+    console.error("Errore Firebase:", error);
+    cloudLoaded = false;
+    alert("⚠️ Accesso o archivio online non disponibile: " + error.message);
+    // Non mostrare l'app in caso di errore, cosi' non si vede l'anteprima.
+  }
+}
 
 const DAYS = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
 const COLORS = ["#5b9bd5","#e78abb","#9c7ad8","#53b46e","#f4a340","#e55353","#4eb3a8","#d1a916"];
@@ -940,7 +922,6 @@ document.getElementById("printReport").addEventListener("click",printSelectedRep
 document.getElementById("currentMonth").textContent =
   new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date());
 
-renderAll();
 initFirebase(); 
 </script>
 </body>
