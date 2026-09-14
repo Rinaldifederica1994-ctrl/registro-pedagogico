@@ -578,7 +578,7 @@ function bindPaymentSelects(){
 function bindMarkPaidButtons(){
   document.querySelectorAll(".mark-paid").forEach(function(button){
     button.addEventListener("click",function(){
-      markSessionPaid(button.dataset.session);
+      markSessionPaid(button.dataset.session || button.dataset.id);
     });
   });
 }
@@ -906,8 +906,8 @@ function sessionHistoryHtml(sessions){
         '<td>'+escapeHtml(subject)+(workType?'<br><small>'+escapeHtml(workType)+'</small>':'')+'</td>'+
         '<td>'+location+'</td>'+
         '<td>'+(s.paid?'<span class="badge paid">🟢 Pagato</span>':'<span class="badge unpaid">🔴 Non pagato</span>')+'</td>'+
-        '<td>'+(!s.paid?'<button class="green mark-paid" data-id="'+s.id+'">✓ Pagato</button> ':'')+
-        '<button class="danger delete-session" data-id="'+s.id+'">🗑️</button></td>'+
+        '<td>'+(!s.paid?'<button class="green mark-paid" data-session="'+s.id+'">✓ Pagato</button> ':'')+
+        '<button class="danger delete-session" data-session="'+s.id+'">🗑️</button></td>'+
       '</tr>';
     }).join("")+'</table></div>';
 }
@@ -996,9 +996,13 @@ function markSessionPaid(sessionId){
 function bindDeleteSessionButtons(){
   document.querySelectorAll(".delete-session").forEach(function(button){
     button.addEventListener("click",function(){
-      const id = button.dataset.session;
+      const id = button.dataset.session || button.dataset.id;
+      if(!id){
+        alert("Errore: sessione non trovata.");
+        return;
+      }
       if(confirm("Eliminare questa sessione?")){
-        data.sessions = data.sessions.filter(function(s){ return s.id!==id; });
+        data.sessions = data.sessions.filter(function(s){ return String(s.id)!==String(id); });
         renderAll();
       }
     });
