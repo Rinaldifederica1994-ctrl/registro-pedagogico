@@ -537,29 +537,37 @@ function renderDashboard(){
   const totalSlots = 6*26;
   document.getElementById("freeSlots").textContent = Math.max(0,totalSlots-occupied);
 
-  const sessions = data.sessions.slice().sort(function(a,b){
-    return String(b.date).localeCompare(String(a.date));
-  }).slice(0,8);
+  const grouped = {};
+  data.sessions.forEach(function(session){
+    const child = childById(session.childId);
+    if(!child) return;
+    if(!grouped[child.id]) grouped[child.id] = {child:child, hours:0, dates:[]};
+    grouped[child.id].hours += durationHours(session.start, session.end);
+    if(session.date && grouped[child.id].dates.indexOf(session.date)===-1){
+      grouped[child.id].dates.push(session.date);
+    }
+  });
 
-  if(!sessions.length){
-    document.getElementById("recentSessions").innerHTML = '<div class="empty">Nessuna sessione salvata.</div>';
+  const summaries = Object.keys(grouped).map(function(id){return grouped[id];}).sort(function(a,b){
+    const ad=(a.dates.slice().sort().reverse()[0]||"");
+    const bd=(b.dates.slice().sort().reverse()[0]||"");
+    return bd.localeCompare(ad);
+  });
+
+  if(!summaries.length){
+    document.getElementById("recentSessions").innerHTML='<div class="empty">Nessuna sessione salvata.</div>';
     return;
   }
 
-  let html = '<table><tr><th>Bambino</th><th>Data</th><th>Ore</th><th>Pagamento</th></tr>';
-  sessions.forEach(function(session){
-    const child = childById(session.childId);
-    html += '<tr><td>'+escapeHtml(child ? child.name : "Eliminato")+'</td>'+
-      '<td>'+escapeHtml(session.date)+'</td>'+
-      '<td>'+formatHours(durationHours(session.start,session.end))+'</td>'+
-      '<td><select class="compact-select payment-select" data-session="'+session.id+'">'+
-        '<option value="false" '+(!session.paid?'selected':'')+'>🔴 Non pagato</option>'+
-        '<option value="true" '+(session.paid?'selected':'')+'>🟢 Pagato</option>'+
-      '</select></td></tr>';
+  let html='<table><tr><th>Bambino</th><th>Ore totali</th><th>Date delle sessioni</th></tr>';
+  summaries.forEach(function(item){
+    const dates=item.dates.slice().sort().reverse();
+    html+='<tr><td><b>'+escapeHtml(item.child.name)+'</b></td>'+
+      '<td><b>'+formatHours(item.hours)+'</b></td>'+
+      '<td>'+dates.map(function(d){return escapeHtml(d);}).join(" · ")+'</td></tr>';
   });
-  html += '</table>';
-  document.getElementById("recentSessions").innerHTML = html;
-  bindPaymentSelects();
+  html+='</table>';
+  document.getElementById("recentSessions").innerHTML=html;
 }
 
 function bindPaymentSelects(){
