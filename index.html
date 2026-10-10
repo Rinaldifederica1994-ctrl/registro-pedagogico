@@ -892,13 +892,50 @@ function sessionFieldValue(id){
   return value || null;
 }
 
+function defaultChildSchedule(){
+  const child = childById(selectedChildId);
+  if(!child) return null;
+  const schedule = activeSchedule(child);
+  if(!schedule.length) return null;
+
+  // Se possibile usa l'orario del giorno corrente; altrimenti
+  // il prossimo orario abituale del bambino.
+  const today = (new Date().getDay()+6)%7;
+  const todayItems = schedule
+    .filter(function(x){ return Number(x.day)===today && x.start && x.end; })
+    .sort(function(a,b){ return String(a.start).localeCompare(String(b.start)); });
+
+  if(todayItems.length) return todayItems[0];
+
+  const now = new Date();
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
+  const upcoming = schedule.slice().sort(function(a,b){
+    const ad=(Number(a.day)-today+7)%7;
+    const bd=(Number(b.day)-today+7)%7;
+    if(ad!==bd) return ad-bd;
+    return String(a.start).localeCompare(String(b.start));
+  });
+
+  return upcoming.find(function(x){
+    return ((Number(x.day)-today+7)%7)>0 ||
+      (((Number(x.day)-today+7)%7)===0 && toMinutes(x.start)>=nowMinutes);
+  }) || upcoming[0] || null;
+}
+function getDefaultSessionStart(){
+  const item=defaultChildSchedule();
+  return item && item.start ? item.start : "15:00";
+}
+function getDefaultSessionEnd(){
+  const item=defaultChildSchedule();
+  return item && item.end ? item.end : "16:00";
+}
 function sessionFormHtml(){
   return '<div class="panel" style="margin:16px 0">'+
     '<h3>➕ Nuova sessione</h3>'+
     '<div class="row3">'+
       '<div><label>Data</label><input id="sessionDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
-      '<div><label>Dalle</label><input id="sessionStart" type="time" value="15:00"></div>'+
-      '<div><label>Alle</label><input id="sessionEnd" type="time" value="16:00"></div>'+
+      '<div><label>Dalle</label><input id="sessionStart" type="time" value="'+getDefaultSessionStart()+'"></div>'+
+      '<div><label>Alle</label><input id="sessionEnd" type="time" value="'+getDefaultSessionEnd()+'"></div>'+
     '</div>'+
     '<div class="row2">'+
       sessionOtherSelect("sessionMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])+
@@ -1344,6 +1381,28 @@ function summaryAmount(child,session){
   return durationHours(session.start,session.end)*Number(child.rate||0);
 }
 
+function summaryPlannedAmount(child,monthKeyValue){
+  const parts=String(monthKeyValue||"").split("-");
+  if(parts.length!==2) return 0;
+  const year=Number(parts[0]), month=Number(parts[1])-1;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const today=new Date();
+  const selectedMonthStart=new Date(year,month,1);
+  const currentMonthStart=new Date(today.getFullYear(),today.getMonth(),1);
+  if(selectedMonthStart>currentMonthStart) return 0;
+  const daysToCount=(year===today.getFullYear() && month===today.getMonth())?today.getDate():daysInMonth;
+  const schedule=activeSchedule(child)||[];
+  let hours=0;
+  schedule.forEach(function(item){
+    for(let day=1;day<=daysToCount;day++){
+      const date=new Date(year,month,day);
+      const weekday=date.getDay()===0?6:date.getDay()-1;
+      if(weekday===Number(item.day)) hours+=durationHours(item.start,item.end);
+    }
+  });
+  return hours*Number(child.rate||0);
+}
+
 function renderParentSummary(){
   const childSelect=document.getElementById("summaryChild");
   const monthInput=document.getElementById("summaryMonth");
@@ -1366,9 +1425,13 @@ function renderParentSummary(){
   const previous=summarySessionsFor(child.id,prevKey).filter(function(s){return s.paid!==true;});
   const currentHours=current.reduce(function(t,s){return t+durationHours(s.start,s.end);},0);
   const currentAmount=current.reduce(function(t,s){return t+summaryAmount(child,s);},0);
+  const plannedAmount=summaryPlannedAmount(child,key);
+  const lostAmount=Math.max(0,plannedAmount-currentAmount);
+  const currentUnpaid=current.filter(function(s){return s.paid!==true;});
+  const currentDue=currentUnpaid.reduce(function(t,s){return t+summaryAmount(child,s);},0);
   const previousHours=previous.reduce(function(t,s){return t+durationHours(s.start,s.end);},0);
   const previousAmount=previous.reduce(function(t,s){return t+summaryAmount(child,s);},0);
-  const total=currentAmount+previousAmount;
+  const total=currentDue+previousAmount;
 
   const sessionRows=current.length ? current.map(function(s){
     const amount=summaryAmount(child,s);
@@ -1395,24 +1458,45 @@ function renderParentSummary(){
   target.innerHTML=
     '<div class="cards">'+
       '<div class="card"><b>⏱️ Ore del mese</b><div class="metric">'+formatHours(currentHours)+' h</div></div>'+
-      '<div class="card"><b>💶 Importo del mese</b><div class="metric">'+euro(currentAmount)+'</div></div>'+
+      '<div class="card"><b>💶 Guadagno effettivo</b><div class="metric">'+euro(currentAmount)+'</div><div class="muted">Prestazioni registrate nel mese</div></div>'+ 
+      '<div class="card"><b>📉 Guadagno perso stimato</b><div class="metric">'+euro(lostAmount)+'</div><div class="muted">Rispetto agli appuntamenti settimanali impostati</div></div>'+
       '<div class="card"><b>💳 Totale da corrispondere</b><div class="metric">'+euro(total)+'</div></div>'+
     '</div>'+
+    '<div class="actions" style="margin-top:12px"><button type="button" class="primary" id="markWholeMonthPaid" '+(currentUnpaid.length?'':'disabled')+'>✓ Segna tutto il mese come pagato</button></div>'+
     '<div class="panel" style="margin-top:16px;background:#fafbff">'+
       '<h3>Riepilogo per '+escapeHtml(monthNameFromKey(key))+'</h3>'+
       '<p><b>Bambino:</b> '+escapeHtml(child.name)+'</p>'+
       '<p><b>Compenso orario:</b> '+euro(child.rate)+'</p>'+
       '<div class="table-wrap"><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+sessionRows+'</table></div>'+
       (previous.length ? '<h3 style="margin-top:20px">📌 Da pagare del mese precedente ('+escapeHtml(monthNameFromKey(prevKey))+')</h3><div class="table-wrap"><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+previousRows+'</table></div><p><b>Arretrato mese precedente:</b> '+euro(previousAmount)+'</p>' : '')+
-      '<div style="margin-top:18px;padding:14px;border-radius:12px;background:#eef7f0"><b>💰 TOTALE DA CORRISPONDERE: '+euro(total)+'</b></div>'+
+      '<div style="margin-top:18px;padding:14px;border-radius:12px;background:#eef7f0"><b>💰 TOTALE DA CORRISPONDERE: '+euro(total)+'</b><p style="margin-bottom:0"><b>Guadagno effettivo del mese:</b> '+euro(currentAmount)+'<br><b>Guadagno perso stimato:</b> '+euro(lostAmount)+'</p><div class="muted" style="margin-top:6px">Il guadagno perso è una stima: confronta il valore degli orari settimanali impostati con le prestazioni registrate nel mese.</div></div>'+
       (total===0 ? '<p class="muted">Nessun importo da corrispondere per questo periodo.</p>' : '')+
     '</div>';
 
   document.querySelectorAll(".summary-paid").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      markSessionPaid(btn.dataset.session);
+    btn.addEventListener("click",function(event){
+      event.preventDefault();
+      const id=String(btn.dataset.session||"");
+      const session=data.sessions.find(function(item){return String(item.id)===id;});
+      if(!session){ alert("Sessione non trovata. Aggiorna il riepilogo e riprova."); return; }
+      if(session.paid===true) return;
+      if(!confirm("Confermi che questa sessione è stata pagata?")) return;
+      session.paid=true;
+      session.paidDate=new Date().toISOString().slice(0,10);
+      renderAll();
     });
   });
+  const wholeMonthBtn=document.getElementById("markWholeMonthPaid");
+  if(wholeMonthBtn){
+    wholeMonthBtn.addEventListener("click",function(){
+      const unpaid=summarySessionsFor(child.id,key).filter(function(item){return item.paid!==true;});
+      if(!unpaid.length) return;
+      if(!confirm("Segnare come pagate tutte le sessioni di "+child.name+" di "+monthNameFromKey(key)+"?")) return;
+      const paidDate=new Date().toISOString().slice(0,10);
+      unpaid.forEach(function(item){item.paid=true;item.paidDate=paidDate;});
+      renderAll();
+    });
+  }
 }
 
 function downloadParentSummary(){
@@ -1426,14 +1510,17 @@ function downloadParentSummary(){
   const prevKey=previousMonthKey(key);
   const previous=summarySessionsFor(child.id,prevKey).filter(function(s){return s.paid!==true;});
   const currentAmount=current.reduce(function(t,s){return t+summaryAmount(child,s);},0);
+  const plannedAmount=summaryPlannedAmount(child,key);
+  const lostAmount=Math.max(0,plannedAmount-currentAmount);
+  const currentDue=current.filter(function(s){return s.paid!==true;}).reduce(function(t,s){return t+summaryAmount(child,s);},0);
   const previousAmount=previous.reduce(function(t,s){return t+summaryAmount(child,s);},0);
   const currentHours=current.reduce(function(t,s){return t+durationHours(s.start,s.end);},0);
   const previousHours=previous.reduce(function(t,s){return t+durationHours(s.start,s.end);},0);
-  const total=currentAmount+previousAmount;
+  const total=currentDue+previousAmount;
   const safeName=String(child.name||"bambino").replace(/[^a-z0-9_-]+/gi,"_");
   const rows=current.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>'+(s.paid?'Pagato':'Da pagare')+'</td></tr>';}).join("");
   const prevRows=previous.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>Da pagare</td></tr>';}).join("");
-  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+ (rows||'<tr><td colspan="5">Nessuna prestazione registrata.</td></tr>') +'</table><p><b>Totale ore del mese:</b> '+formatHours(currentHours)+' h</p><p><b>Totale mese:</b> '+euro(currentAmount)+'</p></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+ (rows||'<tr><td colspan="5">Nessuna prestazione registrata.</td></tr>') +'</table><p><b>Totale ore del mese:</b> '+formatHours(currentHours)+' h</p><p><b>Guadagno effettivo del mese:</b> '+euro(currentAmount)+'</p><p><b>Guadagno perso stimato:</b> '+euro(lostAmount)+'</p><p class="muted">Stima calcolata confrontando gli orari settimanali impostati con le prestazioni registrate nel mese.</p></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob); const link=document.createElement("a"); link.href=url; link.download="riepilogo_prestazioni_"+safeName+"_"+key+".html"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
