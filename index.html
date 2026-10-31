@@ -103,7 +103,7 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
         <div id="homeChildren"></div>
       </div>
       <div class="panel">
-        <h3>Ultime sessioni</h3>
+        <div class="section-head" style="gap:10px;flex-wrap:wrap"><h3>Sessioni per mese</h3><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button type="button" id="recentPrevMonth" class="detail-toggle" aria-label="Mese precedente">◀</button><input type="month" id="recentMonth" aria-label="Mese delle sessioni" style="max-width:160px;padding:7px;border:1px solid #d8e1ed;border-radius:8px"><button type="button" id="recentNextMonth" class="detail-toggle" aria-label="Mese successivo">▶</button></div></div>
         <div id="recentSessions"></div>
       </div>
     </div>
@@ -149,10 +149,14 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 
   <section id="money" class="view">
     <div class="cards">
-      <div class="card"><b>💶 Compenso mensile totale</b><div class="metric" id="monthlyTotal">€0</div><div class="muted">mese in corso</div></div>
-      <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">mese in corso</div></div>
-      <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">mese in corso</div></div>
+      <div class="card"><b>📅 Quanto dovrei guadagnare questo mese</b><div class="metric" id="plannedTotal">€0</div><div class="muted">tutti gli appuntamenti settimanali previsti nel mese</div></div>
+      <div class="card"><b>🗓️ Previsto fino a oggi</b><div class="metric" id="plannedToDateTotal">€0</div><div class="muted">appuntamenti che avrebbero dovuto svolgersi finora</div></div>
+      <div class="card"><b>💶 Guadagno effettivo</b><div class="metric" id="monthlyTotal">€0</div><div class="muted">prestazioni realmente svolte e registrate</div></div>
+      <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">prestazioni del mese già pagate</div></div>
+      <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">prestazioni del mese non ancora pagate</div></div>
+      <div class="card"><b>📉 Guadagno perso fino a oggi</b><div class="metric" id="lostIncome">€0</div><div class="muted">appuntamenti previsti già trascorsi e non svolti</div></div>
     </div>
+    <div class="muted" style="margin:8px 2px 0">Il guadagno perso è calcolato solo sugli appuntamenti previsti già trascorsi. Gli appuntamenti futuri sono inclusi nel previsto mensile, ma non sono considerati persi.</div>
     <div class="panel" style="margin-top:16px">
       <div class="section-head"><div><h3>👥 Dettaglio per bambino</h3><div class="muted">Le ore da pagare si aggiornano automaticamente quando metti una sessione come pagata.</div></div></div>
       <div id="moneyTable" class="money-details"></div>
@@ -244,7 +248,8 @@ async function initFirebase() {
         data = {
           children: Array.isArray(cloudData.children) ? cloudData.children : [],
           sessions: Array.isArray(cloudData.sessions) ? cloudData.sessions : [],
-          commitments: Array.isArray(cloudData.commitments) ? cloudData.commitments : []
+          commitments: Array.isArray(cloudData.commitments) ? cloudData.commitments : [],
+          availability: Array.isArray(cloudData.availability) ? cloudData.availability : undefined
         };
         localStorage.setItem("registroPedagogicoV2", JSON.stringify(data));
       }
@@ -282,7 +287,8 @@ function saveData(){
       {
         children:data.children || [],
         sessions:data.sessions || [],
-        commitments:data.commitments || []
+        commitments:data.commitments || [],
+        availability:data.availability || []
       }
     ).catch(function(error){
       console.error("Errore salvataggio Firebase:",error);
@@ -554,34 +560,28 @@ function renderDashboard(){
   const totalSlots = 6*26;
   document.getElementById("freeSlots").textContent = Math.max(0,totalSlots-occupied);
 
+  const monthInput=document.getElementById("recentMonth");
+  const selectedMonth=monthInput.value || new Date().toLocaleDateString('sv-SE').slice(0,7);
+  if(!monthInput.value) monthInput.value=selectedMonth;
   const grouped = {};
   data.sessions.forEach(function(session){
-    const child = childById(session.childId);
+    if(!session.date || session.date.slice(0,7)!==selectedMonth) return;
+    const child=childById(session.childId);
     if(!child) return;
-    if(!grouped[child.id]) grouped[child.id] = {child:child, hours:0, dates:[]};
-    grouped[child.id].hours += durationHours(session.start, session.end);
-    if(session.date && grouped[child.id].dates.indexOf(session.date)===-1){
-      grouped[child.id].dates.push(session.date);
-    }
+    if(!grouped[child.id]) grouped[child.id]={child:child,hours:0,dates:[]};
+    grouped[child.id].hours+=durationHours(session.start,session.end);
+    if(grouped[child.id].dates.indexOf(session.date)===-1) grouped[child.id].dates.push(session.date);
   });
-
-  const summaries = Object.keys(grouped).map(function(id){return grouped[id];}).sort(function(a,b){
-    const ad=(a.dates.slice().sort().reverse()[0]||"");
-    const bd=(b.dates.slice().sort().reverse()[0]||"");
-    return bd.localeCompare(ad);
-  });
-
+  const summaries=Object.keys(grouped).map(function(id){return grouped[id];}).sort(function(a,b){return a.child.name.localeCompare(b.child.name,'it');});
   if(!summaries.length){
-    document.getElementById("recentSessions").innerHTML='<div class="empty">Nessuna sessione salvata.</div>';
+    document.getElementById("recentSessions").innerHTML='<div class="empty">Nessuna sessione registrata per questo mese.</div>';
     return;
   }
-
-  let html='<table><tr><th>Bambino</th><th>Ore totali</th><th>Date delle sessioni</th></tr>';
+  let html='<table><tr><th>Bambino</th><th>Ore del mese</th><th>Date delle sessioni</th></tr>';
   summaries.forEach(function(item){
-    const dates=item.dates.slice().sort().reverse();
     html+='<tr><td><b>'+escapeHtml(item.child.name)+'</b></td>'+
       '<td><b>'+formatHours(item.hours)+'</b></td>'+
-      '<td>'+dates.map(function(d){return escapeHtml(d);}).join(" · ")+'</td></tr>';
+      '<td>'+item.dates.slice().sort().reverse().map(function(d){return escapeHtml(d);}).join(" · ")+'</td></tr>';
   });
   html+='</table>';
   document.getElementById("recentSessions").innerHTML=html;
@@ -624,16 +624,42 @@ function childMonthlySummary(child){
   });
   return {actual:actual,unpaid:unpaid,total:total,received:received,due:total-received};
 }
+function summaryPlannedAmountFullMonth(child,monthKeyValue){
+  const parts=String(monthKeyValue||"").split("-");
+  if(parts.length!==2) return 0;
+  const year=Number(parts[0]), month=Number(parts[1])-1;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  let hours=0;
+  (activeSchedule(child)||[]).forEach(function(item){
+    for(let day=1;day<=daysInMonth;day++){
+      const date=new Date(year,month,day);
+      const weekday=date.getDay()===0?6:date.getDay()-1;
+      if(weekday===Number(item.day)) hours+=durationHours(item.start,item.end);
+    }
+  });
+  return hours*Number(child.rate||0);
+}
 function renderMoney(){
-  let monthlyTotal=0,received=0,due=0;
+  let monthlyTotal=0,received=0,due=0,lostIncome=0,plannedTotal=0,plannedToDateTotal=0;
+  const now=new Date();
+  const currentKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const todayKey=currentKey+'-'+String(now.getDate()).padStart(2,'0');
   const rows=data.children.map(function(child){
     const m=childMonthlySummary(child);
     monthlyTotal+=m.total; received+=m.received; due+=m.due;
+    plannedTotal+=summaryPlannedAmountFullMonth(child,currentKey);
+    const plannedToDate=summaryPlannedAmount(child,currentKey);
+    plannedToDateTotal+=plannedToDate;
+    const actualToDate=data.sessions.filter(function(s){return s.childId===child.id && dateInCurrentMonth(s.date) && String(s.date)<=todayKey;}).reduce(function(sum,s){return sum+durationHours(s.start,s.end)*Number(child.rate||0);},0);
+    lostIncome+=Math.max(0,plannedToDate-actualToDate);
     return '<tr><td><b>'+escapeHtml(child.name)+'</b></td><td>'+formatHours(m.actual)+'</td><td>'+formatHours(m.unpaid)+'</td></tr>';
   }).join("");
+  document.getElementById("plannedTotal").textContent=euro(plannedTotal);
+  document.getElementById("plannedToDateTotal").textContent=euro(plannedToDateTotal);
   document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
   document.getElementById("received").textContent=euro(received);
   document.getElementById("due").textContent=euro(due);
+  document.getElementById("lostIncome").textContent=euro(lostIncome);
   document.getElementById("moneyTable").innerHTML=rows
     ? '<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
@@ -864,6 +890,7 @@ function renderChildDetail(){
   document.getElementById("saveSession").addEventListener("click",saveSession);
   bindSessionOtherFields();
   bindPaymentSelects();
+  bindMarkPaidButtons();
   bindDownloadSessionButtons();
   bindDeleteSessionButtons();
 }
@@ -1052,7 +1079,7 @@ function saveSession(){
 }
 
 function markSessionPaid(sessionId){
-  const session = data.sessions.find(function(s){ return s.id===sessionId; });
+  const session = data.sessions.find(function(s){ return String(s.id)===String(sessionId); });
   if(!session) return;
 
   if(confirm("Confermi che questa sessione è stata pagata?")){
@@ -1121,11 +1148,21 @@ function editCommitment(id){
     const startValue=document.getElementById("commitmentStart").value;
     const endValue=document.getElementById("commitmentEnd").value;
     if(!startValue || !endValue || startValue>=endValue){
-      alert("Controlla gli orari."); return;
+      alert("Controlla gli orari: l'ora di fine deve essere successiva all'inizio."); return;
     }
+    const editDay=Number(document.getElementById("commitmentDay").value);
+    if(!isWithinAvailability(editDay,startValue,endValue)){
+      alert("⚠️ Questo orario è fuori dalla tua disponibilità impostata."); return;
+    }
+    const editStart=toMinutes(startValue), editEnd=toMinutes(endValue);
+    const conflicts=allEvents(editDay).filter(function(e){
+      if(e.name===(item.name||item.type) && e.start===item.start && e.end===item.end) return false;
+      return editStart<toMinutes(e.end) && editEnd>toMinutes(e.start);
+    });
+    if(conflicts.length){ alert("⚠️ L'impegno si sovrappone a: "+conflicts.map(function(e){return e.name+" "+e.start+"–"+e.end;}).join(", ")); return; }
     item.type=document.getElementById("commitmentType").value;
     item.name=document.getElementById("commitmentName").value.trim() || item.type;
-    item.day=Number(document.getElementById("commitmentDay").value);
+    item.day=editDay;
     item.start=startValue;
     item.end=endValue;
     closeModal();
@@ -1159,7 +1196,7 @@ function renderAgenda(){
             const eventStart = toMinutes(item.start);
             const eventEnd = toMinutes(item.end);
             // L'evento occupa ogni slot che si sovrappone alla sua durata.
-            if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+            if(Number(item.day)===day && slotStart < eventEnd && slotEnd > eventStart){
               events.push({
                 name:child.name,
                 start:item.start,
@@ -1174,7 +1211,7 @@ function renderAgenda(){
         data.commitments.forEach(function(item){
           const eventStart = toMinutes(item.start);
           const eventEnd = toMinutes(item.end);
-          if(item.day===day && slotStart < eventEnd && slotEnd > eventStart){
+          if(Number(item.day)===day && slotStart < eventEnd && slotEnd > eventStart){
             events.push({
               name:item.name,
               start:item.start,
@@ -1278,7 +1315,14 @@ function openAvailabilityForm(){
   const av=getAvailability();
   showModal('<h2>⏰ I miei orari di lavoro</h2><p class="muted">Imposta gli orari in cui vuoi che l’agenda cerchi gli slot liberi.</p>'+DAYS.map(function(d,i){return '<div class="row3"><b>'+d+'</b><input class="av-start" data-day="'+i+'" type="time" value="'+av[i].start+'"><input class="av-end" data-day="'+i+'" type="time" value="'+av[i].end+'"></div>';}).join('')+'<div class="actions"><button class="primary" id="saveAvailability">💾 Salva orari</button><button id="cancelAvailability">Annulla</button></div>');
   document.getElementById('cancelAvailability').onclick=closeModal;
-  document.getElementById('saveAvailability').onclick=function(){ data.availability=DAYS.map(function(_,i){return {start:document.querySelector('.av-start[data-day="'+i+'"]').value,end:document.querySelector('.av-end[data-day="'+i+'"]').value};}); closeModal(); renderAll(); };
+  document.getElementById('saveAvailability').onclick=function(){
+    const proposed=DAYS.map(function(_,i){return {start:document.querySelector('.av-start[data-day="'+i+'"]').value,end:document.querySelector('.av-end[data-day="'+i+'"]').value};});
+    for(let i=0;i<proposed.length;i++){
+      if(!proposed[i].start || !proposed[i].end || proposed[i].start>=proposed[i].end){ alert("Controlla gli orari di "+DAYS[i]+": la fine deve essere successiva all'inizio."); return; }
+    }
+    data.availability=proposed;
+    closeModal(); renderAll();
+  };
 }
 function exportBackup(){
   const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
@@ -1520,7 +1564,7 @@ function downloadParentSummary(){
   const safeName=String(child.name||"bambino").replace(/[^a-z0-9_-]+/gi,"_");
   const rows=current.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>'+(s.paid?'Pagato':'Da pagare')+'</td></tr>';}).join("");
   const prevRows=previous.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>Da pagare</td></tr>';}).join("");
-  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+ (rows||'<tr><td colspan="5">Nessuna prestazione registrata.</td></tr>') +'</table><p><b>Totale ore del mese:</b> '+formatHours(currentHours)+' h</p><p><b>Guadagno effettivo del mese:</b> '+euro(currentAmount)+'</p><p><b>Guadagno perso stimato:</b> '+euro(lostAmount)+'</p><p class="muted">Stima calcolata confrontando gli orari settimanali impostati con le prestazioni registrate nel mese.</p></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+ (rows||'<tr><td colspan="5">Nessuna prestazione registrata.</td></tr>') +'</table><p><b>Totale ore del mese:</b> '+formatHours(currentHours)+' h</p></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob); const link=document.createElement("a"); link.href=url; link.download="riepilogo_prestazioni_"+safeName+"_"+key+".html"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
@@ -1536,6 +1580,17 @@ function renderAll(){
   renderParentSummary();
 }
 
+document.getElementById("recentMonth").value=new Date().toLocaleDateString('sv-SE').slice(0,7);
+document.getElementById("recentMonth").addEventListener("change",renderDashboard);
+function shiftRecentMonth(delta){
+  const input=document.getElementById("recentMonth");
+  const parts=(input.value||new Date().toLocaleDateString('sv-SE').slice(0,7)).split('-').map(Number);
+  const date=new Date(parts[0],parts[1]-1+delta,1);
+  input.value=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+  renderDashboard();
+}
+document.getElementById("recentPrevMonth").addEventListener("click",function(){shiftRecentMonth(-1);});
+document.getElementById("recentNextMonth").addEventListener("click",function(){shiftRecentMonth(1);});
 document.getElementById("addChild").addEventListener("click",function(){ openChildForm(null); });
 document.getElementById("addChildHome").addEventListener("click",function(){ openChildForm(null); });
 document.getElementById("addCommitment").addEventListener("click",function(){ openCommitmentForm(0,"08:00"); });
