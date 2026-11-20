@@ -68,7 +68,14 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 
 .schedule-row{margin:12px 0;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa}
 .sch-end-preview{background:#f3f4f6}
-.session-detail{margin-top:6px;padding:6px 8px;background:#f7f8fb;border-radius:8px;font-size:12px;line-height:1.35}</style>
+.session-detail{margin-top:6px;padding:6px 8px;background:#f7f8fb;border-radius:8px;font-size:12px;line-height:1.35}
+.new-entry-box{margin:0 0 16px;border:1px solid #d9d3f4;background:linear-gradient(135deg,#f8f6ff,#fff);border-radius:16px;padding:16px}
+.new-entry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.new-entry-grid label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.new-entry-grid input,.new-entry-grid select{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+.entry-results{margin-top:12px}.entry-result{padding:10px;border-radius:10px;margin:7px 0;background:#f1f8f4;border:1px solid #d6eadc}
+.entry-result.warn{background:#fff8eb;border-color:#f1dfb8}.child-count-pill{display:inline-block;background:#ece9ff;color:#6254a8;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:800}
+
 </head>
 <body style="display:none;">
 
@@ -97,9 +104,21 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
       <div class="card"><button class="detail-toggle" id="toggleForecast">💶 Compenso ▾</button><div id="forecastHidden" class="hidden"><b>Quanto dovrei guadagnare questo mese</b><div class="metric" id="monthForecast">€0</div><div class="muted">previsione automatica</div></div></div>
     </div>
 
+    <div class="new-entry-box">
+      <div class="section-head" style="flex-wrap:wrap;gap:8px"><div><h3 style="margin-bottom:3px">🧩 Organizza un nuovo ingresso</h3><div class="muted">Inserisci le esigenze e trova gli spazi liberi del pomeriggio, senza modificare l’agenda.</div></div><span class="child-count-pill">👧 <span id="activeChildCount">0</span> bambini attivi</span></div>
+      <div class="new-entry-grid">
+        <div><label for="entryHours">Ore settimanali richieste</label><select id="entryHours"><option value="0.5">30 minuti</option><option value="1">1 ora</option><option value="1.5">1 ora e 30</option><option value="2" selected>2 ore</option><option value="2.5">2 ore e 30</option><option value="3">3 ore</option></select></div>
+        <div><label for="entryDay">Giorno preferito</label><select id="entryDay"><option value="any">Qualsiasi giorno</option>
+        <option value="0">Lunedì</option><option value="1">Martedì</option><option value="2">Mercoledì</option><option value="3">Giovedì</option><option value="4">Venerdì</option><option value="5">Sabato</option></select></div>
+        <div><label for="entryStart">Non prima delle</label><input type="time" id="entryStart" value="14:00"></div>
+        <div><label for="entryEnd">Entro le</label><input type="time" id="entryEnd" value="20:00"></div>
+        <div><button class="primary" id="suggestEntrySlots" type="button">🔎 Trova collocazioni</button></div>
+      </div><div class="entry-results" id="entrySuggestions"></div>
+    </div>
+
     <div class="layout">
       <div class="panel">
-        <div class="section-head"><h3>I miei bambini</h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
+        <div class="section-head"><h3>I miei bambini <span class="child-count-pill" id="childCountHeader">0</span></h3><button class="primary" id="addChildHome">➕ Inserisci</button></div>
         <div id="homeChildren"></div>
       </div>
       <div class="panel">
@@ -543,7 +562,43 @@ function renderChildLists(){
   });
 }
 
+function updateActiveChildCount(){
+  const count=data.children.filter(function(child){return activeSchedule(child).length>0;}).length;
+  const homeCount=document.getElementById("activeChildCount");
+  const headerCount=document.getElementById("childCountHeader");
+  if(homeCount) homeCount.textContent=count;
+  if(headerCount) headerCount.textContent=count;
+}
+function suggestNewEntrySlots(){
+  const hours=Number(document.getElementById("entryHours").value)||1;
+  const needed=Math.round(hours*60);
+  const preferred=document.getElementById("entryDay").value;
+  const earliest=document.getElementById("entryStart").value||"14:00";
+  const latest=document.getElementById("entryEnd").value||"20:00";
+  const out=document.getElementById("entrySuggestions");
+  if(toMinutes(latest)<=toMinutes(earliest)){out.innerHTML='<div class="empty">Controlla la fascia oraria: l’orario finale deve essere successivo a quello iniziale.</div>';return;}
+  const days=preferred==="any"?[0,1,2,3,4,5]:[Number(preferred)];
+  const candidates=[];
+  days.forEach(function(day){
+    const av=getAvailability()[day]; if(!av) return;
+    let start=Math.max(toMinutes(earliest),toMinutes(av.start),14*60);
+    const end=Math.min(toMinutes(latest),toMinutes(av.end));
+    for(let t=start;t+needed<=end;t+=30){
+      const slotStart=String(Math.floor(t/60)).padStart(2,"0")+":"+(t%60?"30":"00");
+      const slotEnd=addMinutes(slotStart,needed);
+      let conflict=false;
+      data.children.forEach(function(child){activeSchedule(child).forEach(function(item){if(Number(item.day)===day&&t<toMinutes(item.end)&&t+needed>toMinutes(item.start)) conflict=true;});});
+      data.commitments.forEach(function(item){if(Number(item.day)===day&&t<toMinutes(item.end)&&t+needed>toMinutes(item.start)) conflict=true;});
+      if(!conflict)candidates.push({day:day,start:slotStart,end:slotEnd,minutes:needed});
+    }
+  });
+  candidates.sort(function(a,b){return a.day-b.day||toMinutes(a.start)-toMinutes(b.start);});
+  if(!candidates.length){out.innerHTML='<div class="empty">Non ho trovato uno spazio consecutivo libero nella fascia indicata. Prova ad ampliare gli orari o scegliere un altro giorno.</div>';return;}
+  out.innerHTML='<b>💡 Collocazioni suggerite (agenda invariata)</b>'+candidates.slice(0,8).map(function(item,index){return '<div class="entry-result '+(index>2?'warn':'')+'"><b>'+(index===0?'🟢 Prima proposta':'🕒 Alternativa')+'</b> — '+DAYS[item.day]+', '+item.start+'–'+item.end+' ('+(item.minutes/60).toLocaleString('it-IT')+' h)</div>';}).join('')+'<div class="muted">Suggerimenti basati sugli impegni inseriti e sugli spazi del pomeriggio (dalle 14:00). Nessun appuntamento viene spostato o salvato.</div>';
+}
+
 function renderDashboard(){
+  updateActiveChildCount();
   document.getElementById("weekHours").textContent = formatHours(weekHours());
   document.getElementById("monthForecast").textContent = euro(monthlyForecast());
 
@@ -1618,6 +1673,7 @@ document.getElementById("downloadParentSummary").addEventListener("click",downlo
 document.getElementById("currentMonth").textContent =
   new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date());
 
+document.getElementById("suggestEntrySlots").addEventListener("click",suggestNewEntrySlots);
 initFirebase(); 
 </script>
 </body>
