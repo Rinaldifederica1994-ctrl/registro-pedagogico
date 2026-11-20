@@ -705,30 +705,49 @@ function renderMoney(){
   const now=new Date();
   const currentKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const todayKey=currentKey+'-'+String(now.getDate()).padStart(2,'0');
-  const rows=data.children.map(function(child){
+  data.children.forEach(function(child){
     const m=childMonthlySummary(child);
     monthlyTotal+=m.total; received+=m.received; due+=m.due;
     plannedTotal+=summaryPlannedAmountFullMonth(child,currentKey);
-    const plannedToDate=summaryPlannedAmount(child,currentKey);
-    plannedToDateTotal+=plannedToDate;
-    const actualToDate=data.sessions.filter(function(s){return s.childId===child.id && dateInCurrentMonth(s.date) && String(s.date)<=todayKey;}).reduce(function(sum,s){return sum+durationHours(s.start,s.end)*Number(child.rate||0);},0);
-    lostIncome+=Math.max(0,plannedToDate-actualToDate);
-    (activeSchedule(child)||[]).forEach(function(item){
-      for(let day=1;day<=now.getDate();day++){
-        const date=new Date(now.getFullYear(),now.getMonth(),day);
-        const weekday=date.getDay()===0?6:date.getDay()-1;
-        if(weekday!==Number(item.day)) continue;
-        const dateKey=currentKey+'-'+String(day).padStart(2,'0');
-        const attended=data.sessions.some(function(s){return String(s.childId)===String(child.id)&&String(s.date)===dateKey;});
+    plannedToDateTotal+=summaryPlannedAmount(child,currentKey);
+
+    const schedule=activeSchedule(child)||[];
+    const missed=[];
+    const extraWorked=[];
+    // Per-child accounting: keep missed appointments in history, but offset them
+    // with additional hours worked for the same child on other dates.
+    for(let day=1;day<=now.getDate();day++){
+      const date=new Date(now.getFullYear(),now.getMonth(),day);
+      const weekday=date.getDay()===0?6:date.getDay()-1;
+      const dateKey=currentKey+'-'+String(day).padStart(2,'0');
+      const plannedSlots=schedule.filter(function(item){return Number(item.day)===weekday;});
+      const plannedHours=plannedSlots.reduce(function(sum,item){return sum+durationHours(item.start,item.end);},0);
+      const sessionsOnDate=data.sessions.filter(function(s){return String(s.childId)===String(child.id)&&String(s.date)===dateKey;});
+      const actualHours=sessionsOnDate.reduce(function(sum,s){return sum+durationHours(s.start,s.end);},0);
+      plannedSlots.forEach(function(item){
+        const attended=sessionsOnDate.some(function(s){return s.start===item.start && s.end===item.end;});
         if(!attended){
-          const hours=durationHours(item.start,item.end), amount=hours*Number(child.rate||0);
-          lostDetails.push({child:child.name,date:dateKey,start:item.start,end:item.end,hours:hours,amount:amount});
+          const hours=durationHours(item.start,item.end);
+          missed.push({child:child.name,date:dateKey,start:item.start,end:item.end,hours:hours,amount:hours*Number(child.rate||0)});
         }
+      });
+      // Hours worked beyond this child's scheduled hours on a date can recover
+      // missed appointments from earlier dates. Extra hours are never cross-child.
+      const surplus=Math.max(0,actualHours-plannedHours);
+      if(surplus>0) extraWorked.push({date:dateKey,hours:surplus});
+    }
+    missed.sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);});
+    extraWorked.sort(function(a,b){return a.date.localeCompare(b.date);});
+    let recoveryPool=extraWorked.reduce(function(sum,item){return sum+item.hours;},0);
+    missed.forEach(function(item){
+      const recovered=Math.min(item.hours,recoveryPool);
+      recoveryPool=Math.max(0,recoveryPool-recovered);
+      const remaining=Math.max(0,item.hours-recovered);
+      if(remaining>0){
+        lostDetails.push({child:item.child,date:item.date,hours:remaining,amount:remaining*Number(child.rate||0)});
       }
     });
-
-    return '<tr><td><b>'+escapeHtml(child.name)+'</b></td><td>'+formatHours(m.actual)+'</td><td>'+formatHours(m.unpaid)+'</td></tr>';
-  }).join("");
+  });
   document.getElementById("plannedTotal").textContent=euro(plannedTotal);
   document.getElementById("plannedToDateTotal").textContent=euro(plannedToDateTotal);
   document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
@@ -737,7 +756,11 @@ function renderMoney(){
   lostIncome=lostDetails.reduce(function(sum,item){return sum+item.amount;},0);
   document.getElementById("lostIncome").textContent=euro(lostIncome);
   const lostDetailsEl=document.getElementById("lostIncomeDetails");
-  if(lostDetailsEl) lostDetailsEl.innerHTML=lostDetails.length ? lostDetails.sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);}).map(function(item){return '<div style="border-top:1px solid #eee;padding:5px 0"><b>'+escapeHtml(item.child)+'</b> · '+DAYS[(new Date(item.date+'T12:00:00').getDay()+6)%7]+' '+escapeHtml(italianDate(item.date))+' · '+formatHours(item.hours)+' · <b>'+euro(item.amount)+'</b></div>';}).join("") : '<div class="muted">Nessun appuntamento non svolto rilevato.</div>';
+  if(lostDetailsEl) lostDetailsEl.innerHTML=lostDetails.length ? lostDetails.sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(item){return '<div style="border-top:1px solid #eee;padding:5px 0"><b>'+escapeHtml(item.child)+'</b> · '+DAYS[(new Date(item.date+'T12:00:00').getDay()+6)%7]+' '+escapeHtml(italianDate(item.date))+' · '+formatHours(item.hours)+' · <b>'+euro(item.amount)+'</b></div>';}).join("") : '<div class="muted">Nessun appuntamento non svolto rilevato.</div>';
+  const rows=data.children.map(function(child){
+    const m=childMonthlySummary(child);
+    return '<tr><td><b>'+escapeHtml(child.name)+'</b></td><td>'+formatHours(m.actual)+'</td><td>'+formatHours(m.unpaid)+'</td></tr>';
+  }).join("");
   document.getElementById("moneyTable").innerHTML=rows
     ? '<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
