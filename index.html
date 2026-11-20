@@ -75,7 +75,7 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
 .new-entry-grid input,.new-entry-grid select{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
 .entry-results{margin-top:12px}.entry-result{padding:10px;border-radius:10px;margin:7px 0;background:#f1f8f4;border:1px solid #d6eadc}
 .entry-result.warn{background:#fff8eb;border-color:#f1dfb8}.child-count-pill{display:inline-block;background:#ece9ff;color:#6254a8;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:800}
-
+</style>
 </head>
 <body style="display:none;">
 
@@ -110,7 +110,8 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
         <div><label for="entryHours">Ore settimanali richieste</label><select id="entryHours"><option value="0.5">30 minuti</option><option value="1">1 ora</option><option value="1.5">1 ora e 30</option><option value="2" selected>2 ore</option><option value="2.5">2 ore e 30</option><option value="3">3 ore</option></select></div>
         <div><label for="entryDay">Giorno preferito</label><select id="entryDay"><option value="any">Qualsiasi giorno</option>
         <option value="0">Lunedì</option><option value="1">Martedì</option><option value="2">Mercoledì</option><option value="3">Giovedì</option><option value="4">Venerdì</option><option value="5">Sabato</option></select></div>
-        <div><label for="entryLocation">Luogo del nuovo intervento</label><select id="entryLocation"><option value="casa">🏡 Domicilio del bambino</option><option value="studio">🏠 Casa mia / studio</option></select></div>
+        <div><label for="entryStart">Non prima delle</label><input type="time" id="entryStart" value="14:00"></div>
+        <div><label for="entryEnd">Entro le</label><input type="time" id="entryEnd" value="20:00"></div>
         <div><button class="primary" id="suggestEntrySlots" type="button">🔎 Trova collocazioni</button></div>
       </div><div class="entry-results" id="entrySuggestions"></div>
     </div>
@@ -572,30 +573,28 @@ function suggestNewEntrySlots(){
   const hours=Number(document.getElementById("entryHours").value)||1;
   const needed=Math.round(hours*60);
   const preferred=document.getElementById("entryDay").value;
-  const newLocation=document.getElementById("entryLocation").value||"casa";
+  const earliest=document.getElementById("entryStart").value||"14:00";
+  const latest=document.getElementById("entryEnd").value||"20:00";
   const out=document.getElementById("entrySuggestions");
+  if(toMinutes(latest)<=toMinutes(earliest)){out.innerHTML='<div class="empty">Controlla la fascia oraria: l’orario finale deve essere successivo a quello iniziale.</div>';return;}
   const days=preferred==="any"?[0,1,2,3,4,5]:[Number(preferred)];
   const candidates=[];
-  const travel=30;
-  function hasTravelConflict(day,start,end,loc){
-    const candStart=toMinutes(start), candEnd=toMinutes(end), events=[];
-    data.children.forEach(function(child){activeSchedule(child).forEach(function(item){if(Number(item.day)===day)events.push({start:item.start,end:item.end,location:child.location||"casa"});});});
-    data.commitments.forEach(function(item){if(Number(item.day)===day)events.push({start:item.start,end:item.end,location:item.location||"casa"});});
-    return events.some(function(ev){const es=toMinutes(ev.start),ee=toMinutes(ev.end);if(candStart<ee&&candEnd>es)return true;
-      if((ev.location||"casa")===loc)return false;
-      return (candStart>=ee&&candStart<ee+travel)||(candEnd<=es&&candEnd>es-travel);
-    });
-  }
-  days.forEach(function(day){const av=getAvailability()[day];if(!av)return;
-    const start=Math.max(toMinutes(av.start),14*60),end=Math.min(toMinutes(av.end),20*60);
+  days.forEach(function(day){
+    const av=getAvailability()[day]; if(!av) return;
+    let start=Math.max(toMinutes(earliest),toMinutes(av.start),14*60);
+    const end=Math.min(toMinutes(latest),toMinutes(av.end));
     for(let t=start;t+needed<=end;t+=30){
-      const slotStart=String(Math.floor(t/60)).padStart(2,"0")+":"+(t%60===0?"00":"30"),slotEnd=addMinutes(slotStart,needed);
-      if(!hasTravelConflict(day,slotStart,slotEnd,newLocation))candidates.push({day:day,start:slotStart,end:slotEnd,minutes:needed});
+      const slotStart=String(Math.floor(t/60)).padStart(2,"0")+":"+(t%60?"30":"00");
+      const slotEnd=addMinutes(slotStart,needed);
+      let conflict=false;
+      data.children.forEach(function(child){activeSchedule(child).forEach(function(item){if(Number(item.day)===day&&t<toMinutes(item.end)&&t+needed>toMinutes(item.start)) conflict=true;});});
+      data.commitments.forEach(function(item){if(Number(item.day)===day&&t<toMinutes(item.end)&&t+needed>toMinutes(item.start)) conflict=true;});
+      if(!conflict)candidates.push({day:day,start:slotStart,end:slotEnd,minutes:needed});
     }
   });
   candidates.sort(function(a,b){return a.day-b.day||toMinutes(a.start)-toMinutes(b.start);});
-  if(!candidates.length){out.innerHTML='<div class="empty">Non ho trovato collocazioni pomeridiane compatibili. Prova un altro giorno o una durata diversa.</div>';return;}
-  out.innerHTML='<b>💡 Collocazioni suggerite (agenda invariata)</b>'+candidates.slice(0,8).map(function(item,index){return '<div class="entry-result '+(index>2?'warn':'')+'"><b>'+(index===0?'🟢 Prima proposta':'🕒 Alternativa')+'</b> — '+DAYS[item.day]+', '+item.start+'–'+item.end+' ('+(item.minutes/60).toLocaleString('it-IT')+' h)</div>';}).join('')+'<div class="muted">Ricerca automatica dalle 14:00 alle 20:00. Considera 30 minuti per gli spostamenti tra luoghi diversi. L’agenda non viene modificata.</div>';
+  if(!candidates.length){out.innerHTML='<div class="empty">Non ho trovato uno spazio consecutivo libero nella fascia indicata. Prova ad ampliare gli orari o scegliere un altro giorno.</div>';return;}
+  out.innerHTML='<b>💡 Collocazioni suggerite (agenda invariata)</b>'+candidates.slice(0,8).map(function(item,index){return '<div class="entry-result '+(index>2?'warn':'')+'"><b>'+(index===0?'🟢 Prima proposta':'🕒 Alternativa')+'</b> — '+DAYS[item.day]+', '+item.start+'–'+item.end+' ('+(item.minutes/60).toLocaleString('it-IT')+' h)</div>';}).join('')+'<div class="muted">Suggerimenti basati sugli impegni inseriti e sugli spazi del pomeriggio (dalle 14:00). Nessun appuntamento viene spostato o salvato.</div>';
 }
 
 function renderDashboard(){
@@ -738,7 +737,7 @@ function renderMoney(){
   lostIncome=lostDetails.reduce(function(sum,item){return sum+item.amount;},0);
   document.getElementById("lostIncome").textContent=euro(lostIncome);
   const lostDetailsEl=document.getElementById("lostIncomeDetails");
-  if(lostDetailsEl) lostDetailsEl.innerHTML=lostDetails.length ? lostDetails.sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);}).map(function(item){return '<div style="border-top:1px solid #eee;padding:5px 0"><b>'+escapeHtml(item.child)+'</b> · '+escapeHtml(italianDate(item.date))+' · '+escapeHtml(item.start)+'–'+escapeHtml(item.end)+' ('+formatHours(item.hours)+') · <b>'+euro(item.amount)+'</b></div>';}).join("") : '<div class="muted">Nessun appuntamento non svolto rilevato.</div>';
+  if(lostDetailsEl) lostDetailsEl.innerHTML=lostDetails.length ? lostDetails.sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);}).map(function(item){return '<div style="border-top:1px solid #eee;padding:5px 0"><b>'+escapeHtml(item.child)+'</b> · '+DAYS[(new Date(item.date+'T12:00:00').getDay()+6)%7]+' '+escapeHtml(italianDate(item.date))+' · '+formatHours(item.hours)+' · <b>'+euro(item.amount)+'</b></div>';}).join("") : '<div class="muted">Nessun appuntamento non svolto rilevato.</div>';
   document.getElementById("moneyTable").innerHTML=rows
     ? '<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
@@ -857,7 +856,7 @@ function openChildForm(child){
       '<div><details><summary><b>💶 Compenso</b></summary><label>Compenso orario (€)</label><input id="childRate" type="number" step="0.01" value="'+(c.rate||"")+'"></details></div>'+
       '<div><label>È fisso ogni settimana?</label><select id="childFixed"><option value="true" '+(c.fixed!==false?"selected":"")+'>Sì</option><option value="false" '+(c.fixed===false?"selected":"")+'>No</option></select></div>'+
     '</div>'+
-    '<label>📍 Dove lo seguo?</label><select id="childLocation"><option value="casa" '+((c.location||"casa")==="casa"?"selected":"")+'>🏡 Domicilio del bambino</option><option value="studio" '+((c.location||"casa")==="studio"?"selected":"")+'>🏠 Casa mia / studio</option></select>'+
+    '<label>📍 Dove lo seguo?</label><select id="childLocation"><option value="casa" '+((c.location||"casa")==="casa"?"selected":"")+'>🏠 A casa</option><option value="studio" '+((c.location||"casa")==="studio"?"selected":"")+'>🏢 In studio</option></select>'+
     '<label>Questa settimana è attivo?</label><select id="childActive"><option value="true" '+(c.active!==false?"selected":"")+'>Sì</option><option value="false" '+(c.active===false?"selected":"")+'>No</option></select>'+
     '<h3>📅 Giorni, ora e durata</h3><div class="muted">Inserisci l’ora di inizio e la durata: l’ora di fine viene calcolata automaticamente.</div><div id="scheduleRows"></div><button id="addScheduleRow">➕ Aggiungi giorno</button>'+
     '<details><summary><b>Informazioni facoltative</b></summary>'+
