@@ -154,7 +154,7 @@ details{margin-top:12px;padding:10px;background:#f8f9fc;border-radius:10px}
       <div class="card"><b>💶 Guadagno effettivo</b><div class="metric" id="monthlyTotal">€0</div><div class="muted">prestazioni realmente svolte e registrate</div></div>
       <div class="card"><b>🟢 Incassato</b><div class="metric" id="received">€0</div><div class="muted">prestazioni del mese già pagate</div></div>
       <div class="card"><b>🔴 Da ricevere</b><div class="metric" id="due">€0</div><div class="muted">prestazioni del mese non ancora pagate</div></div>
-      <div class="card"><b>📉 Guadagno perso fino a oggi</b><div class="metric" id="lostIncome">€0</div><div class="muted">appuntamenti previsti già trascorsi e non svolti</div></div>
+      <div class="card"><b>📉 Guadagno perso fino a oggi</b><div class="metric" id="lostIncome">€0</div><div class="muted">appuntamenti previsti già trascorsi e non svolti</div><div id="lostIncomeDetails" style="margin-top:10px;font-size:13px"></div></div>
     </div>
     <div class="muted" style="margin:8px 2px 0">Il guadagno perso è calcolato solo sugli appuntamenti previsti già trascorsi. Gli appuntamenti futuri sono inclusi nel previsto mensile, ma non sono considerati persi.</div>
     <div class="panel" style="margin-top:16px">
@@ -355,7 +355,7 @@ function overlaps(day,start,end,ignoreChildId){
 function suggestedSlots(day,durationMinutes,limit){
   const a=getAvailability()[day]; if(!a) return [];
   const result=[], step=30;
-  for(let t=toMinutes(a.start); t+durationMinutes<=toMinutes(a.end); t+=step){
+  for(let t=Math.max(toMinutes(a.start),14*60); t+durationMinutes<=toMinutes(a.end); t+=step){
     const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
     const en=addMinutes(st,durationMinutes);
     if(!overlaps(day,st,en).length) result.push(st+"–"+en);
@@ -368,7 +368,7 @@ function renderFreeSlots(){
   for(let d=0;d<6;d++){
     const a=av[d]; if(!a) continue;
     const slots=[]; let open=null;
-    for(let t=toMinutes(a.start);t<toMinutes(a.end);t+=30){
+    for(let t=Math.max(toMinutes(a.start),14*60);t<toMinutes(a.end);t+=30){
       const st=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
       const free=!overlaps(d,st,addMinutes(st,30)).length;
       if(free && open===null) open=st;
@@ -639,8 +639,14 @@ function summaryPlannedAmountFullMonth(child,monthKeyValue){
   });
   return hours*Number(child.rate||0);
 }
+function italianDate(dateString){
+  if(!dateString) return "—";
+  const parts=String(dateString).split("-");
+  if(parts.length!==3) return dateString;
+  return parts[2]+"/"+parts[1]+"/"+parts[0];
+}
 function renderMoney(){
-  let monthlyTotal=0,received=0,due=0,lostIncome=0,plannedTotal=0,plannedToDateTotal=0;
+  let monthlyTotal=0,received=0,due=0,lostIncome=0,plannedTotal=0,plannedToDateTotal=0; const lostDetails=[];
   const now=new Date();
   const currentKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const todayKey=currentKey+'-'+String(now.getDate()).padStart(2,'0');
@@ -652,6 +658,20 @@ function renderMoney(){
     plannedToDateTotal+=plannedToDate;
     const actualToDate=data.sessions.filter(function(s){return s.childId===child.id && dateInCurrentMonth(s.date) && String(s.date)<=todayKey;}).reduce(function(sum,s){return sum+durationHours(s.start,s.end)*Number(child.rate||0);},0);
     lostIncome+=Math.max(0,plannedToDate-actualToDate);
+    (activeSchedule(child)||[]).forEach(function(item){
+      for(let day=1;day<=now.getDate();day++){
+        const date=new Date(now.getFullYear(),now.getMonth(),day);
+        const weekday=date.getDay()===0?6:date.getDay()-1;
+        if(weekday!==Number(item.day)) continue;
+        const dateKey=currentKey+'-'+String(day).padStart(2,'0');
+        const attended=data.sessions.some(function(s){return String(s.childId)===String(child.id)&&String(s.date)===dateKey;});
+        if(!attended){
+          const hours=durationHours(item.start,item.end), amount=hours*Number(child.rate||0);
+          lostDetails.push({child:child.name,date:dateKey,start:item.start,end:item.end,hours:hours,amount:amount});
+        }
+      }
+    });
+
     return '<tr><td><b>'+escapeHtml(child.name)+'</b></td><td>'+formatHours(m.actual)+'</td><td>'+formatHours(m.unpaid)+'</td></tr>';
   }).join("");
   document.getElementById("plannedTotal").textContent=euro(plannedTotal);
@@ -659,7 +679,10 @@ function renderMoney(){
   document.getElementById("monthlyTotal").textContent=euro(monthlyTotal);
   document.getElementById("received").textContent=euro(received);
   document.getElementById("due").textContent=euro(due);
+  lostIncome=lostDetails.reduce(function(sum,item){return sum+item.amount;},0);
   document.getElementById("lostIncome").textContent=euro(lostIncome);
+  const lostDetailsEl=document.getElementById("lostIncomeDetails");
+  if(lostDetailsEl) lostDetailsEl.innerHTML=lostDetails.length ? lostDetails.sort(function(a,b){return a.date.localeCompare(b.date)||a.start.localeCompare(b.start);}).map(function(item){return '<div style="border-top:1px solid #eee;padding:5px 0"><b>'+escapeHtml(item.child)+'</b> · '+escapeHtml(italianDate(item.date))+' · '+escapeHtml(item.start)+'–'+escapeHtml(item.end)+' ('+formatHours(item.hours)+') · <b>'+euro(item.amount)+'</b></div>';}).join("") : '<div class="muted">Nessun appuntamento non svolto rilevato.</div>';
   document.getElementById("moneyTable").innerHTML=rows
     ? '<table><tr><th>Bambino</th><th>Ore effettive</th><th>Ore da pagare</th></tr>'+rows+'</table>'
     : '<div class="empty">Ancora nessun bambino.</div>';
@@ -919,66 +942,61 @@ function sessionFieldValue(id){
   return value || null;
 }
 
-function defaultChildSchedule(){
-  const child = childById(selectedChildId);
+function childScheduleForDate(dateValue){
+  const child=childById(selectedChildId);
   if(!child) return null;
-  const schedule = activeSchedule(child);
+  const schedule=activeSchedule(child);
   if(!schedule.length) return null;
-
-  // Se possibile usa l'orario del giorno corrente; altrimenti
-  // il prossimo orario abituale del bambino.
-  const today = (new Date().getDay()+6)%7;
-  const todayItems = schedule
-    .filter(function(x){ return Number(x.day)===today && x.start && x.end; })
-    .sort(function(a,b){ return String(a.start).localeCompare(String(b.start)); });
-
+  const date=dateValue ? new Date(dateValue+'T12:00:00') : new Date();
+  const day=date.getDay()===0?6:date.getDay()-1;
+  const matches=schedule.filter(function(x){return Number(x.day)===day && x.start && x.end;})
+    .sort(function(a,b){return String(a.start).localeCompare(String(b.start));});
+  return matches[0]||null;
+}
+function defaultChildSchedule(){
+  const child=childById(selectedChildId);
+  if(!child) return null;
+  const schedule=activeSchedule(child);
+  if(!schedule.length) return null;
+  const today=(new Date().getDay()+6)%7;
+  const todayItems=schedule.filter(function(x){return Number(x.day)===today&&x.start&&x.end;})
+    .sort(function(a,b){return String(a.start).localeCompare(String(b.start));});
   if(todayItems.length) return todayItems[0];
-
-  const now = new Date();
-  const nowMinutes = now.getHours()*60 + now.getMinutes();
-  const upcoming = schedule.slice().sort(function(a,b){
-    const ad=(Number(a.day)-today+7)%7;
-    const bd=(Number(b.day)-today+7)%7;
-    if(ad!==bd) return ad-bd;
-    return String(a.start).localeCompare(String(b.start));
-  });
-
-  return upcoming.find(function(x){
-    return ((Number(x.day)-today+7)%7)>0 ||
-      (((Number(x.day)-today+7)%7)===0 && toMinutes(x.start)>=nowMinutes);
-  }) || upcoming[0] || null;
+  return schedule[0]||null;
 }
-function getDefaultSessionStart(){
-  const item=defaultChildSchedule();
-  return item && item.start ? item.start : "15:00";
+function getDefaultSessionStart(dateValue){
+  const item=dateValue?childScheduleForDate(dateValue):defaultChildSchedule();
+  return item&&item.start?item.start:"15:00";
 }
-function getDefaultSessionEnd(){
-  const item=defaultChildSchedule();
-  return item && item.end ? item.end : "16:00";
+function getDefaultSessionEnd(dateValue){
+  const item=dateValue?childScheduleForDate(dateValue):defaultChildSchedule();
+  return item&&item.end?item.end:"16:00";
+}
+function updateSessionTimesByDate(){
+  const dateInput=document.getElementById('sessionDate');
+  const startInput=document.getElementById('sessionStart');
+  const endInput=document.getElementById('sessionEnd');
+  if(!dateInput||!startInput||!endInput) return;
+  const item=childScheduleForDate(dateInput.value);
+  if(item){startInput.value=item.start;endInput.value=item.end;}
 }
 function sessionFormHtml(){
   return '<div class="panel" style="margin:16px 0">'+
     '<h3>➕ Nuova sessione</h3>'+
     '<div class="row3">'+
-      '<div><label>Data</label><input id="sessionDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+      '<div><label>Data</label><input id="sessionDate" type="date" value="'+new Date().toISOString().slice(0,10)+'" onchange="updateSessionTimesByDate()"></div>'+
       '<div><label>Dalle</label><input id="sessionStart" type="time" value="'+getDefaultSessionStart()+'"></div>'+
       '<div><label>Alle</label><input id="sessionEnd" type="time" value="'+getDefaultSessionEnd()+'"></div>'+
     '</div>'+
     '<div class="row2">'+
-      sessionOtherSelect("sessionMood","😊 Come è oggi?",["Sereno e disponibile","Di buon umore","Tranquillo","Stanco","Poco motivato","Irritabile","In difficoltà"])+
-      sessionOtherSelect("sessionSubject","📚 Lavoro di oggi",["Italiano","Matematica","Inglese","Storia","Geografia","Scienze","Metodo di studio","Autonomia","Attività educativa"])+
+      sessionOtherSelect("sessionSubject","📚 Lavoro di oggi",["Compiti","Potenziamento","ABA","Compiti o ABA","Incontro scuola","Supervisione"])+
     '</div>'+
+
     '<div class="row2">'+
-      sessionOtherSelect("sessionWork","🎯 Tipo di lavoro",["Compiti","Potenziamento","Recupero","Ripasso","Preparazione verifica","Metodo di studio"])+
-      sessionOtherSelect("sessionAttention","👀 Attenzione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+
-    '</div>'+
-    '<div class="row2">'+
-      sessionOtherSelect("sessionCollaboration","🤝 Collaborazione",["Ottima","Buona","Discontinua","Scarsa","Molto scarsa"])+
       '<div><label>💶 Pagamento</label><select id="sessionPaid"><option value="false">🔴 Non pagato</option><option value="true">🟢 Pagato</option></select></div>'+
     '</div>'+
     '<label>📍 Luogo</label><select id="sessionLocation"><option value="casa">🏠 A casa</option><option value="studio">🏢 In studio</option></select>'+
-    '<label>📝 Note / comportamento</label><textarea id="sessionNotes"></textarea>'+
-    '<label>📌 Cose da fare per la prossima volta</label><textarea id="sessionNext" placeholder="Cosa riprendere, preparare o ricordare..."></textarea>'+
+    '<label>📝 Note</label><textarea id="sessionNotes" placeholder="Scrivi qui le note della sessione..."></textarea>'+
     '<div class="actions"><button class="primary" id="saveSession">💾 Salva sessione</button></div>'+
   '</div>';
 }
@@ -986,17 +1004,15 @@ function sessionFormHtml(){
 function sessionHistoryHtml(sessions){
   return '<div class="table-wrap"><table><tr><th>Data</th><th>Orario</th><th>Lavoro</th><th>Dettagli sessione</th><th>Luogo</th><th>Pagamento</th><th>Azioni</th></tr>'+
     sessions.map(function(s){
-      const subject=s.subject||s.work||"—";
-      const workType=s.workType||s.type||"";
+      const subject=s.workType||s.subject||s.work||"—";
+      const workType="";
       const location=(s.location||"casa")==="studio"?"🏢 Studio":"🏠 Casa";
       const details =
         '<div class="session-detail"><b>😊 Come era:</b> '+escapeHtml(s.mood||"—")+'</div>'+
-        '<div class="session-detail"><b>👀 Attenzione:</b> '+escapeHtml(s.attention||"—")+'</div>'+
-        '<div class="session-detail"><b>🤝 Collaborazione:</b> '+escapeHtml(s.collaboration||"—")+'</div>'+
         (s.notes?'<div class="session-detail"><b>📝 Note:</b> '+escapeHtml(s.notes)+'</div>':'')+
         (s.next?'<div class="session-detail"><b>📌 Prossima volta:</b> '+escapeHtml(s.next)+'</div>':'');
       return '<tr>'+
-        '<td>'+escapeHtml(s.date||"")+'</td>'+
+        '<td>'+escapeHtml(italianDate(s.date||""))+'</td>'+
         '<td>'+escapeHtml(s.start||"")+'–'+escapeHtml(s.end||"")+'</td>'+
         '<td>'+escapeHtml(subject)+(workType?'<br><small>'+escapeHtml(workType)+'</small>':'')+'</td>'+
         '<td>'+details+'</td>'+
@@ -1022,8 +1038,7 @@ function downloadSession(sessionId){
     '<dt>Orario</dt><dd>'+escapeHtml(session.start)+'–'+escapeHtml(session.end)+'</dd>'+
     '<dt>Stato d’animo</dt><dd>'+escapeHtml(session.mood)+'</dd>'+
     '<dt>Lavoro di oggi</dt><dd>'+escapeHtml(session.subject)+' · '+escapeHtml(session.workType)+'</dd>'+
-    '<dt>Attenzione</dt><dd>'+escapeHtml(session.attention)+'</dd>'+
-    '<dt>Collaborazione</dt><dd>'+escapeHtml(session.collaboration)+'</dd>'+
+
     '<dt>Prossima volta</dt><dd>'+escapeHtml(session.next || "—")+'</dd>'+
     '<dt>Luogo</dt><dd>'+((session.location||"casa")==="studio"?"In studio":"A casa")+'</dd>'+
     '<dt>Note</dt><dd>'+escapeHtml(session.notes || "—")+'</dd>'+
@@ -1055,12 +1070,9 @@ function saveSession(){
     alert("Controlla gli orari della sessione.");
     return;
   }
-  const mood=sessionFieldValue("sessionMood");
   const subject=sessionFieldValue("sessionSubject");
-  const workType=sessionFieldValue("sessionWork");
-  const attention=sessionFieldValue("sessionAttention");
-  const collaboration=sessionFieldValue("sessionCollaboration");
-  if([mood,subject,workType,attention,collaboration].some(function(v){return v===null;})){
+  const workType=subject;
+  if(subject===null){
     alert("Hai scelto «Altro»: scrivi la tua voce nel campo comparso sotto la tendina.");
     return;
   }
@@ -1069,10 +1081,10 @@ function saveSession(){
     childId:selectedChildId,
     date:document.getElementById("sessionDate").value,
     start:start,end:end,
-    mood:mood,subject:subject,workType:workType,attention:attention,collaboration:collaboration,
+    mood:"",subject:subject,workType:workType,
     location:document.getElementById("sessionLocation").value,
     notes:document.getElementById("sessionNotes").value,
-    next:document.getElementById("sessionNext").value,
+    next:"",
     paid:document.getElementById("sessionPaid").value==="true"
   });
   renderAll();
@@ -1480,7 +1492,7 @@ function renderParentSummary(){
   const sessionRows=current.length ? current.map(function(s){
     const amount=summaryAmount(child,s);
     return '<tr>'+
-      '<td>'+escapeHtml(s.date||"")+'</td>'+
+      '<td>'+escapeHtml(italianDate(s.date||""))+'</td>'+
       '<td>'+escapeHtml(s.start||"")+'–'+escapeHtml(s.end||"")+'</td>'+
       '<td>'+formatHours(durationHours(s.start,s.end))+' h</td>'+
       '<td>'+euro(amount)+'</td>'+
@@ -1491,7 +1503,7 @@ function renderParentSummary(){
   const previousRows=previous.length ? previous.map(function(s){
     const amount=summaryAmount(child,s);
     return '<tr>'+
-      '<td>'+escapeHtml(s.date||"")+'</td>'+
+      '<td>'+escapeHtml(italianDate(s.date||""))+'</td>'+
       '<td>'+escapeHtml(s.start||"")+'–'+escapeHtml(s.end||"")+'</td>'+
       '<td>'+formatHours(durationHours(s.start,s.end))+' h</td>'+
       '<td>'+euro(amount)+'</td>'+
@@ -1550,7 +1562,8 @@ function downloadParentSummary(){
   const child=childById(childSelect.value);
   const key=monthInput.value;
   if(!child || !key){ alert("Seleziona bambino e mese."); return; }
-  const current=summarySessionsFor(child.id,key);
+  const allCurrent=summarySessionsFor(child.id,key);
+  const current=allCurrent.filter(function(s){return s.paid!==true;});
   const prevKey=previousMonthKey(key);
   const previous=summarySessionsFor(child.id,prevKey).filter(function(s){return s.paid!==true;});
   const currentAmount=current.reduce(function(t,s){return t+summaryAmount(child,s);},0);
@@ -1562,9 +1575,9 @@ function downloadParentSummary(){
   const previousHours=previous.reduce(function(t,s){return t+durationHours(s.start,s.end);},0);
   const total=currentDue+previousAmount;
   const safeName=String(child.name||"bambino").replace(/[^a-z0-9_-]+/gi,"_");
-  const rows=current.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>'+(s.paid?'Pagato':'Da pagare')+'</td></tr>';}).join("");
-  const prevRows=previous.map(function(s){return '<tr><td>'+escapeHtml(s.date)+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td><td>Da pagare</td></tr>';}).join("");
-  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+ (rows||'<tr><td colspan="5">Nessuna prestazione registrata.</td></tr>') +'</table><p><b>Totale ore del mese:</b> '+formatHours(currentHours)+' h</p></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Ore</th><th>Importo</th><th>Stato</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
+  const rows=current.map(function(s){return '<tr><td>'+escapeHtml(italianDate(s.date))+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+formatHours(durationHours(s.start,s.end))+' h</td><td>'+euro(summaryAmount(child,s))+'</td></tr>';}).join("");
+  const prevRows=previous.map(function(s){return '<tr><td>'+escapeHtml(italianDate(s.date))+'</td><td>'+escapeHtml(s.start)+'–'+escapeHtml(s.end)+'</td><td>'+euro(summaryAmount(child,s))+'</td></tr>';}).join("");
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Riepilogo prestazioni - '+escapeHtml(child.name)+' - '+escapeHtml(key)+'</title><style>body{font-family:Arial,sans-serif;max-width:850px;margin:35px auto;padding:0 24px;color:#263858}h1{border-bottom:3px solid #6254a8;padding-bottom:12px}h2{margin-top:28px}table{width:100%;border-collapse:collapse;margin:12px 0 20px}th,td{padding:9px;border-bottom:1px solid #dfe4ec;text-align:left}th{background:#f3f5fa}.box{background:#f8f9fc;border:1px solid #dde4ef;border-radius:12px;padding:16px;margin-top:16px}.total{font-size:20px;font-weight:bold;background:#eef7f0;padding:15px;border-radius:12px;margin-top:18px}.muted{color:#6b7280;font-size:12px}.footer{margin-top:28px;color:#777;font-size:11px}</style></head><body><h1>📄 Riepilogo prestazioni</h1><p><b>Bambino:</b> '+escapeHtml(child.name)+'</p><p><b>Periodo:</b> '+escapeHtml(monthNameFromKey(key))+'</p><p><b>Compenso orario:</b> '+euro(child.rate)+'</p><div class="box"><h2>Prestazioni del mese</h2><table><tr><th>Data</th><th>Orario</th><th>Importo da ricevere</th></tr>'+ (rows||'<tr><td colspan="4">Nessun importo da ricevere.</td></tr>') +'</table></div>'+ (previous.length?'<div class="box"><h2>Importi non saldati del mese precedente</h2><table><tr><th>Data</th><th>Orario</th><th>Importo da ricevere</th></tr>'+prevRows+'</table><p><b>Ore arretrate:</b> '+formatHours(previousHours)+' h</p><p><b>Importo arretrato:</b> '+euro(previousAmount)+'</p></div>':'') +'<div class="total">TOTALE DA CORRISPONDERE: '+euro(total)+'</div><p class="footer">Riepilogo delle prestazioni svolte. Documento di riepilogo, non fattura fiscale.</p></body></html>';
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob); const link=document.createElement("a"); link.href=url; link.download="riepilogo_prestazioni_"+safeName+"_"+key+".html"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
